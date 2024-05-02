@@ -1,16 +1,20 @@
-package com.example.multifunctions;
+package com.example;
+
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-public class TestGeminiMultiFunctions {
+import com.example.multifunctions.*;
 
-    public static Log logger = LogFactory.getLog(TestGeminiMultiFunctions.class);
+public class GeminiMultiFunctionTest {
 
-    public static void main(String args[]) {
+    public static Log logger = LogFactory.getLog(GeminiMultiFunctionTest.class);
 
+    @Test
+    public void testSubtraction() {
         try {
-
             String projectId = System.getenv("PROJECT_ID");
             String location = "us-central1";
             String modelName = "gemini-1.5-pro-preview-0409";
@@ -21,9 +25,8 @@ public class TestGeminiMultiFunctions {
             GeminiMultiFunctions function = new GeminiMultiFunctions();
             String functionName = function.service(projectId, location, modelName, promptText);
             logger.debug("detrmined function name" + functionName);
-        } catch (Exception e) {
-            logger.error("service()", e);
+        } catch (Exception genException) {
+            logger.error("testSubtraction()", genException);
         }
-
     }
 }
