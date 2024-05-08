@@ -18,15 +18,25 @@ public class GeminiMultiFunctionTest {
             String projectId = System.getenv("PROJECT_ID");
             String location = "us-central1";
             String modelName = "gemini-1.5-pro-preview-0409";
-            // String promptText = "are there any hospital appointmnet slots available at
+            // String promptText = "are there any hospital appointment slots available at
             // zipcode 15090?";
 
-            String promptText = "What's the address for the 40.714224,-73.961452 value ?";
+            String promptText = "are there any appointments available??";
             GeminiMultiFunctions function = new GeminiMultiFunctions();
+            long startTime = System.nanoTime();
             String functionName = function.service(projectId, location, modelName, promptText);
+            logTimeTaken(startTime, System.nanoTime());
+            System.out.println(functionName);
             logger.debug("detrmined function name" + functionName);
         } catch (Exception genException) {
             logger.error("testSubtraction()", genException);
         }
+    }
+
+    private void logTimeTaken(long startTime, long endTime) {
+        long durationInNano = endTime - startTime;
+        double durationInSeconds = (double) durationInNano / 1_000_000_000.0;
+        logger.info("Time taken to execute the function: " + durationInSeconds + " seconds");
+
     }
 }

@@ -64,11 +64,6 @@ public class GeminiMultiFunctions {
                                                                         .build())
                                         .build();
 
-                        // Add the function to a "tool"
-                        Tool tool_latlong = Tool.newBuilder()
-                                        .addFunctionDeclarations(functionDeclaration_latlong)
-                                        .build();
-
                         /* Declare the function for the API that we want to invoke for latlang */
                         FunctionDeclaration functionDeclaration_medical_appointment = FunctionDeclaration.newBuilder()
                                         .setName("get_appointment")
@@ -85,14 +80,16 @@ public class GeminiMultiFunctions {
                                                                         .build())
                                         .build();
 
-                        Tool tool_appointment = Tool.newBuilder()
+                        // Add the function to a "tool"
+                        Tool tool_latlong = Tool.newBuilder()
+                                        .addFunctionDeclarations(functionDeclaration_latlong)
                                         .addFunctionDeclarations(functionDeclaration_medical_appointment)
                                         .build();
 
                         // Invoke the Gemini model with the use of the tool to generate the API
                         // parameters from the prompt input.
                         GenerativeModel geminiModel = new GenerativeModel(modelName, vertexAI)
-                                        .withTools(Arrays.asList(tool_latlong, tool_appointment));
+                                        .withTools(Arrays.asList(tool_latlong));
 
                         ImmutableList<Tool> setTools = geminiModel.getTools();
                         int toolsSize = setTools.size();
