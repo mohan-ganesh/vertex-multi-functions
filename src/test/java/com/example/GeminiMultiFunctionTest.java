@@ -6,7 +6,7 @@ import static org.junit.Assert.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.example.multifunctions.*;
+//import com.example.multifunctions.*;
 
 public class GeminiMultiFunctionTest {
 
