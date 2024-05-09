@@ -1,5 +1,5 @@
 
-package com.example.multifunctions;
+package com.example.multifunctions.controller;
 
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
@@ -34,16 +34,16 @@ import org.apache.commons.logging.LogFactory;
 /*
 This class demonstrates how to use Gemini  for getting deterministic function call names
 */
-public class GeminiMultiFunctions {
+abstract class AbstrtactMultiFunction {
 
-        public static Log logger = LogFactory.getLog(GeminiMultiFunctions.class);
+        public static Log logger = LogFactory.getLog(AbstrtactMultiFunction.class);
 
         public String service(String projectId, String location, String modelName, String promptText) throws Exception {
                 String rawResult = callApi(projectId, location, modelName, promptText);
                 return rawResult;
         }
 
-        public static String callApi(String projectId, String location,
+        private String callApi(String projectId, String location,
                         String modelName, String promptText)
                         throws IOException, InterruptedException {
 
@@ -80,10 +80,26 @@ public class GeminiMultiFunctions {
                                                                         .build())
                                         .build();
 
+                        FunctionDeclaration functionDeclaration_lookup_member = FunctionDeclaration.newBuilder()
+                                        .setName("search_member")
+                                        .setDescription("Check for user by looking up member id or user id.")
+                                        .setParameters(
+                                                        Schema.newBuilder()
+                                                                        .setType(Type.OBJECT)
+                                                                        .putProperties("member_id", Schema.newBuilder()
+                                                                                        .setType(Type.STRING)
+                                                                                        .setDescription(
+                                                                                                        "Unique member or user id of the type alphanumeric character")
+                                                                                        .build())
+                                                                        .addRequired("zipcode")
+                                                                        .build())
+                                        .build();
+
                         // Add the function to a "tool"
                         Tool tool_latlong = Tool.newBuilder()
                                         .addFunctionDeclarations(functionDeclaration_latlong)
                                         .addFunctionDeclarations(functionDeclaration_medical_appointment)
+                                        .addFunctionDeclarations(functionDeclaration_lookup_member)
                                         .build();
 
                         // Invoke the Gemini model with the use of the tool to generate the API
@@ -93,7 +109,7 @@ public class GeminiMultiFunctions {
 
                         ImmutableList<Tool> setTools = geminiModel.getTools();
                         int toolsSize = setTools.size();
-                        logger.debug("number of tools - " + toolsSize);
+                        logger.info("number of functions - " + tool_latlong.getFunctionDeclarationsCount());
                         GenerateContentResponse response = geminiModel.generateContent(promptText);
                         Content responseJSONCnt = response.getCandidates(0).getContent();
                         Part functionResponse = responseJSONCnt.getParts(0);
