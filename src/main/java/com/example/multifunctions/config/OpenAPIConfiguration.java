@@ -12,7 +12,7 @@ public class OpenAPIConfiguration {
     public OpenAPI openAPI() {
 
         return new OpenAPI()
-                .addServersItem(new Server().url("/"));
+                .addServersItem(new Server().url("/helpdesk"));
     }
 
 }

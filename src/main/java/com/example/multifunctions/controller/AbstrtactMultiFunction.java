@@ -2,10 +2,12 @@
 package com.example.multifunctions.controller;
 
 import com.example.multifunctions.api.IFunctions;
+import com.example.multifunctions.functions.FunctionsDefinitions;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
 import com.google.cloud.vertexai.api.Part;
 import com.google.cloud.vertexai.api.FunctionDeclaration;
+import com.google.cloud.vertexai.api.FunctionResponseOrBuilder;
 import com.google.cloud.vertexai.api.FunctionCall;
 import com.google.cloud.vertexai.api.GenerateContentResponse;
 import com.google.cloud.vertexai.api.Schema;
@@ -33,6 +35,7 @@ import java.net.URI;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 
 /*
 This class demonstrates how to use Gemini  for getting deterministic function call names
@@ -41,158 +44,85 @@ abstract class AbstrtactMultiFunction {
 
         public static Log logger = LogFactory.getLog(AbstrtactMultiFunction.class);
 
-        @Autowired
-        IFunctions ifunction;
+        @Value("${model.name}")
+        private String modelName;
 
-        public String service(String projectId, String location, String modelName, String promptText) throws Exception {
-                String rawResult = callApi(projectId, location, modelName, promptText);
-                return rawResult;
+        @Value("${location.default}")
+        private String location;
+
+        @Autowired
+        IFunctions iFunctions;
+
+        public String service(String promptText) throws Exception {
+                GenerateContentResponse response = callModel(promptText);
+
+                Content responseJSONCnt = response.getCandidates(0).getContent();
+
+                Part functionResponse = null;
+                if (responseJSONCnt.getPartsCount() > 0) {
+                        functionResponse = responseJSONCnt.getParts(0);
+                }
+
+                String functionName;
+                if (functionResponse != null && functionResponse.hasFunctionCall()
+                                && responseJSONCnt.getPartsCount() > 0) {
+                        FunctionCall functionCall = functionResponse.getFunctionCall();
+                        functionName = functionCall.getName();
+                        Struct args = functionCall.getArgs();
+
+                        logger.info("arguments - " + args.toString());
+                        String apiFunctionResponse = "";
+                        switch (functionName) {
+
+                                case "get_address":
+                                        logger.info(functionCall + " start");
+
+                                        logger.info(functionCall + " end");
+                                        break;
+                                case "search_member":
+                                        logger.info(functionCall + " start");
+                                        logger.info(functionCall + " end");
+                                        break;
+                                case "create_member":
+                                        logger.info(functionCall + " start");
+                                        apiFunctionResponse = iFunctions.createMember(args);
+                                        logger.info(functionCall + " end");
+                                        break;
+
+                                default:
+                                        break;
+                        }
+
+                } else {
+                        functionName = "undefined";
+                        logger.info(responseJSONCnt.toString());
+                        // logger.info(functionResponse.toString());
+                }
+                return functionName;
+
         }
 
-        private String callApi(String projectId, String location,
-                        String modelName, String promptText)
+        private GenerateContentResponse callModel(String promptText)
                         throws IOException, InterruptedException {
 
+                String projectId = System.getenv("PROJECT_ID");
+
+                if (projectId == null) {
+                        throw new ExceptionInInitializerError("projectId is required.");
+                }
+
                 try (VertexAI vertexAI = new VertexAI(projectId, location)) {
-                        /* Declare the function for the API that we want to invoke (Geo coding API) */
-                        FunctionDeclaration functionDeclaration_latlong = FunctionDeclaration.newBuilder()
-                                        .setName("get_address")
-                                        .setDescription("Get the address for the given latitude and longitude value.")
-                                        .setParameters(
-                                                        Schema.newBuilder()
-                                                                        .setType(Type.OBJECT)
-                                                                        .putProperties("latlng", Schema.newBuilder()
-                                                                                        .setType(Type.STRING)
-                                                                                        .setDescription(
-                                                                                                        "This must be a string of latitude and longitude coordinates separated by comma")
-                                                                                        .build())
-                                                                        .addRequired("latlng")
-                                                                        .build())
-                                        .build();
 
-                        /* Declare the function for the API that we want to invoke for latlang */
-                        FunctionDeclaration functionDeclaration_medical_appointment = FunctionDeclaration.newBuilder()
-                                        .setName("get_appointment")
-                                        .setDescription("Check for any open slot appointments for medical hospitcal.")
-                                        .setParameters(
-                                                        Schema.newBuilder()
-                                                                        .setType(Type.OBJECT)
-                                                                        .putProperties("zipcode", Schema.newBuilder()
-                                                                                        .setType(Type.STRING)
-                                                                                        .setDescription(
-                                                                                                        "Check for any open slot appointments for medical hospitcal")
-                                                                                        .build())
-                                                                        .addRequired("zipcode")
-                                                                        .build())
+                        Tool tools = Tool.newBuilder()
+                                        .addAllFunctionDeclarations(
+                                                        FunctionsDefinitions.getInstance().getFunctionDeclarations())
                                         .build();
-
-                        FunctionDeclaration functionDeclaration_lookup_member = FunctionDeclaration.newBuilder()
-                                        .setName("search_member")
-                                        .setDescription("Check for user by looking up member id or user id.")
-                                        .setParameters(
-                                                        Schema.newBuilder()
-                                                                        .setType(Type.OBJECT)
-                                                                        .putProperties("member_id", Schema.newBuilder()
-                                                                                        .setType(Type.STRING)
-                                                                                        .setDescription(
-                                                                                                        "Unique member or user id of the type alphanumeric character")
-                                                                                        .build())
-                                                                        .addRequired("zipcode")
-                                                                        .build())
-                                        .build();
-
-                        FunctionDeclaration functionDeclaration_create_member = FunctionDeclaration.newBuilder()
-                                        .setName("create_member")
-                                        .setDescription("Check for user by looking up member id or user id.")
-                                        .setParameters(
-                                                        Schema.newBuilder()
-                                                                        .setType(Type.OBJECT)
-                                                                        .putProperties("member_id", Schema.newBuilder()
-                                                                                        .setType(Type.STRING)
-                                                                                        .setDescription(
-                                                                                                        "Unique member or user id of the type alphanumeric character")
-                                                                                        .build())
-                                                                        .addRequired("zipcode")
-                                                                        .putProperties("firstName", Schema.newBuilder()
-                                                                                        .setType(Type.STRING)
-                                                                                        .setDescription(
-                                                                                                        "Member First Name")
-                                                                                        .build())
-                                                                        .addRequired("firstName")
-                                                                        .putProperties("lastName", Schema.newBuilder()
-                                                                                        .setType(Type.STRING)
-                                                                                        .setDescription(
-                                                                                                        "Member last name")
-                                                                                        .build())
-                                                                        .addRequired("firstName")
-                                                                        .putProperties("email", Schema.newBuilder()
-                                                                                        .setType(Type.STRING)
-                                                                                        .setDescription(
-                                                                                                        "Member email address")
-                                                                                        .build())
-                                                                        .addRequired("email")
-                                                                        .build())
-                                        .build();
-
-                        // Add the function to a "tool"
-                        Tool tool_latlong = Tool.newBuilder()
-                                        .addFunctionDeclarations(functionDeclaration_latlong)
-                                        .addFunctionDeclarations(functionDeclaration_medical_appointment)
-                                        .addFunctionDeclarations(functionDeclaration_lookup_member)
-                                        .addFunctionDeclarations(functionDeclaration_create_member)
-                                        .build();
-
-                        // Invoke the Gemini model with the use of the tool to generate the API
-                        // parameters from the prompt input.
                         GenerativeModel geminiModel = new GenerativeModel(modelName, vertexAI)
-                                        .withTools(Arrays.asList(tool_latlong));
+                                        .withTools(Arrays.asList(tools));
 
-                        logger.info("number of functions - " + tool_latlong.getFunctionDeclarationsCount());
                         GenerateContentResponse response = geminiModel.generateContent(promptText);
 
-                        Content responseJSONCnt = response.getCandidates(0).getContent();
-
-                        Part functionResponse = null;
-                        if (responseJSONCnt.getPartsCount() > 0) {
-                                functionResponse = responseJSONCnt.getParts(0);
-                        }
-
-                        String functionName;
-                        if (functionResponse != null && functionResponse.hasFunctionCall()
-                                        && responseJSONCnt.getPartsCount() > 0) {
-                                FunctionCall functionCall = functionResponse.getFunctionCall();
-                                functionName = functionCall.getName();
-                                Struct args = functionCall.getArgs();
-
-                                logger.info("arguments - " + args.toString());
-                                String apiFunctionResponse = "";
-                                switch (functionName) {
-
-                                        case "get_address":
-                                                logger.info(functionCall + " start");
-
-                                                logger.info(functionCall + " end");
-                                                break;
-                                        case "search_member":
-                                                logger.info(functionCall + " start");
-                                                logger.info(functionCall + " end");
-                                                break;
-                                        case "create_member":
-                                                logger.info(functionCall + " start");
-                                                apiFunctionResponse = ifunction.createMember(args);
-                                                logger.info(functionCall + " end");
-                                                break;
-
-                                        default:
-                                                break;
-                                }
-
-                        } else {
-                                functionName = "undefined";
-                                logger.info(responseJSONCnt.toString());
-                                // logger.info(functionResponse.toString());
-                        }
-                        return functionName;
+                        return response;
                 }
         }
 }
