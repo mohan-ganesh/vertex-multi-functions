@@ -78,7 +78,7 @@ abstract class AbstrtactMultiFunction {
                         functionName = functionCall.getName();
                         Struct args = functionCall.getArgs();
 
-                        logger.info("arguments - " + args.toString());
+                        logger.info("arguments for functions - " + args.toString());
                         String apiFunctionResponse = "";
                         switch (functionName) {
 
@@ -94,7 +94,7 @@ abstract class AbstrtactMultiFunction {
                                 case "create_member":
                                         logger.info(functionCall + " start");
                                         apiFunctionResponse = iFunctions.createMember(args);
-                                        logger.info(functionCall + " end");
+                                        logger.info(functionCall + " response " + apiFunctionResponse);
                                         break;
 
                                 default:
@@ -102,9 +102,8 @@ abstract class AbstrtactMultiFunction {
                         }
 
                 } else {
-                        functionName = "undefined";
+                        functionName = "undefined-functiona-name";
                         logger.info(responseJSONCnt.toString());
-                        // logger.info(functionResponse.toString());
                 }
                 return answer;
 
