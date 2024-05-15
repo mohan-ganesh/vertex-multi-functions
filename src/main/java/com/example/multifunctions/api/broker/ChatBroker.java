@@ -29,7 +29,7 @@ public class ChatBroker {
 
     public boolean messages(String documentId, String sender, String message) {
 
-        String methodName = "addOrUpdateChatMessage(S,S,S) - ";
+        String methodName = "messages(S,S,S) - ";
 
         try {
 
@@ -39,30 +39,53 @@ public class ChatBroker {
                     .document(documentId).get();
 
             if (chatMessageRef.get().exists()) {
+                logger.info(methodName + " append");
                 // append the info
                 // If document exists, append to existing messages
-                Map<String, Object> existingData = chatMessageRef.get().getData();
+                // If document exists, append to existing messages list
+                DocumentReference chatDocMessageRef = firestore.getConnection().collection("chat").document(documentId);
+                DocumentSnapshot document = chatMessageRef.get();
+                Map<String, Object> existingData = document.getData();
                 if (existingData != null) {
-                    String existingMessage = (String) existingData.get("message");
-                    existingData.put("message", existingMessage + "\n" + message);
+                    logger.info(methodName + "existing data");
+                    List<Map<String, String>> messages = (List<Map<String, String>>) existingData.get("messages");
+                    if (messages == null) {
+                        messages = new ArrayList<>();
+                    }
+                    Map<String, String> newMessage = new HashMap<>();
+                    newMessage.put("sender", sender);
+                    newMessage.put("message", message);
+                    newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
+                    messages.add(newMessage);
+                    existingData.put("message", messages);
                 } else {
+                    logger.info(methodName + "appending the data");
                     existingData = new HashMap<>();
-                    existingData.put("message", message);
+                    List<Map<String, String>> messages = new ArrayList<>();
+                    Map<String, String> newMessage = new HashMap<>();
+                    newMessage.put("sender", sender);
+                    newMessage.put("message", message);
+                    newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
+                    messages.add(newMessage);
+                    existingData.put("message", messages);
                 }
-                existingData.put("sender", sender);
-                existingData.put("timestamp", FieldValue.serverTimestamp());
-                // chatMessageRef.(existingData, SetOptions.merge());
 
+                chatDocMessageRef.set(existingData, SetOptions.merge());
             } else {
                 // create new document
+                logger.info(methodName + " create new doc id");
 
-                Map<String, Object> chatMessage = new HashMap<>();
-                chatMessage.put("sender", sender);
-                chatMessage.put("message", message);
-                chatMessage.put("timestamp", FieldValue.serverTimestamp());
+                List<Map<String, String>> messages = new ArrayList<>();
+                Map<String, String> newMessage = new HashMap<>();
+                newMessage.put("sender", sender);
+                newMessage.put("message", message);
+                newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
+                messages.add(newMessage);
+
+                Messages data = new Messages(messages);
 
                 ApiFuture<WriteResult> documentReference = firestore.getConnection().collection("chat")
-                        .document(documentId).create(chatMessage);
+                        .document(documentId).set(data, SetOptions.merge());
                 logger.info(documentReference.toString());
             }
         } catch (InterruptedException | ExecutionException e) {
