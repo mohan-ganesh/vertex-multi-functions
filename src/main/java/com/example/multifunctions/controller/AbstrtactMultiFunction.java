@@ -11,6 +11,7 @@ import com.google.cloud.vertexai.api.FunctionDeclaration;
 import com.google.cloud.vertexai.api.FunctionResponseOrBuilder;
 import com.google.cloud.vertexai.api.FunctionCall;
 import com.google.cloud.vertexai.api.GenerateContentResponse;
+import com.google.cloud.vertexai.api.GenerationConfig;
 import com.google.cloud.vertexai.api.Schema;
 import com.google.cloud.vertexai.api.Tool;
 import com.google.cloud.vertexai.api.Type;
@@ -120,12 +121,31 @@ abstract class AbstrtactMultiFunction {
 
                 try (VertexAI vertexAI = new VertexAI(projectId, location)) {
 
+                        GenerationConfig generationConfig = GenerationConfig.newBuilder()
+                                        .setMaxOutputTokens(2048)
+                                        .setTemperature(0.5F)
+                                        .setTopK(32)
+                                        .setTopP(1)
+                                        .build();
+
+                        List<SafetySetting> safetySettings = Arrays.asList(
+                                        SafetySetting.newBuilder()
+                                                        .setCategory(HarmCategory.HARM_CATEGORY_HATE_SPEECH)
+                                                        .setThreshold(SafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+                                                        .build(),
+                                        SafetySetting.newBuilder()
+                                                        .setCategory(HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+                                                        .setThreshold(SafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
+                                                        .build());
+
                         Tool tools = Tool.newBuilder()
                                         .addAllFunctionDeclarations(
                                                         FunctionsDefinitions.getInstance().getFunctionDeclarations())
                                         .build();
                         GenerativeModel geminiModel = new GenerativeModel(modelName, vertexAI)
-                                        .withTools(Arrays.asList(tools));
+                                        .withTools(Arrays.asList(tools))
+                                        .withGenerationConfig(generationConfig)
+                                        .withSafetySettings(safetySettings);
 
                         GenerateContentResponse response = geminiModel.generateContent(promptText);
 
