@@ -31,67 +31,50 @@ public class ChatBroker {
 
         String methodName = "messages(S,S,S) - ";
 
+        logger.info(methodName + " document id is " + documentId);
+
+        // Reference to the specified document in the "chat" collection
+        DocumentReference chatMessageRef = firestore.getConnection().collection("chat").document(documentId);
+        ApiFuture<DocumentSnapshot> future = chatMessageRef.get();
+
         try {
-
-            logger.info(methodName + " documnet id is " + documentId);
-            // Reference to the specified document in the "chat" collection
-            ApiFuture<DocumentSnapshot> chatMessageRef = firestore.getConnection().collection("chat")
-                    .document(documentId).get();
-
-            if (chatMessageRef.get().exists()) {
+            DocumentSnapshot document = future.get();
+            Map<String, Object> chatMessageData;
+            if (document.exists()) {
                 logger.info(methodName + " append");
-                // append the info
-                // If document exists, append to existing messages
                 // If document exists, append to existing messages list
-                DocumentReference chatDocMessageRef = firestore.getConnection().collection("chat").document(documentId);
-                DocumentSnapshot document = chatMessageRef.get();
-                Map<String, Object> existingData = document.getData();
-                if (existingData != null) {
-                    logger.info(methodName + "existing data");
-                    List<Map<String, String>> messages = (List<Map<String, String>>) existingData.get("messages");
+                chatMessageData = document.getData();
+                if (chatMessageData != null) {
+                    List<Map<String, String>> messages = (List<Map<String, String>>) chatMessageData.get("messages");
                     if (messages == null) {
                         messages = new ArrayList<>();
                     }
                     Map<String, String> newMessage = new HashMap<>();
                     newMessage.put("sender", sender);
                     newMessage.put("message", message);
-                    newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
+                    newMessage.put("timestamp", FieldValue.serverTimestamp().toString()); // Using new Date().toString()
+                                                                                          // for simplicity
                     messages.add(newMessage);
-                    existingData.put("messages", messages);
-                } else {
-                    logger.info(methodName + "appending the data");
-                    existingData = new HashMap<>();
-                    List<Map<String, String>> messages = new ArrayList<>();
-                    Map<String, String> newMessage = new HashMap<>();
-                    newMessage.put("sender", sender);
-                    newMessage.put("message", message);
-                    newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
-                    messages.add(newMessage);
-                    existingData.put("messages", messages);
+                    chatMessageData.put("messages", messages);
                 }
-
-                chatDocMessageRef.set(existingData, SetOptions.merge());
             } else {
-                // create new document
                 logger.info(methodName + " create new doc id");
-                Map<String, Object> chatMessage = new HashMap<>();
-                chatMessage.put("sender", sender);
-                chatMessage.put("message", message);
-                chatMessage.put("timestamp", FieldValue.serverTimestamp());
-
+                // Create new document
                 List<Map<String, String>> messages = new ArrayList<>();
                 Map<String, String> newMessage = new HashMap<>();
                 newMessage.put("sender", sender);
                 newMessage.put("message", message);
-                newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
+                newMessage.put("timestamp", FieldValue.serverTimestamp().toString()); // Using new Date().toString() for
+                                                                                      // simplicity
                 messages.add(newMessage);
 
-                ApiFuture<WriteResult> documentReference = firestore.getConnection().collection("chat")
-                        .document(documentId).create(chatMessage);
-                logger.info(documentReference.toString());
+                chatMessageData = new HashMap<>();
+                chatMessageData.put("messages", messages);
             }
+            chatMessageRef.set(chatMessageData, SetOptions.merge());
         } catch (InterruptedException | ExecutionException e) {
-            throw new BrokerException(methodName, e);
+            logger.error(methodName + " error", e);
+            throw new RuntimeException(methodName, e);
         }
 
         logger.info(methodName + "end.");
@@ -111,6 +94,27 @@ public class ChatBroker {
             }
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
+        }
+
+        return messages;
+    }
+
+    public List<Map<String, String>> messages(String documentId) {
+        List<Map<String, String>> messages = new ArrayList<>();
+        DocumentReference chatMessageRef = firestore.getConnection().collection("chat").document(documentId);
+        ApiFuture<DocumentSnapshot> future = chatMessageRef.get();
+
+        try {
+            DocumentSnapshot document = future.get();
+            if (document.exists()) {
+                Map<String, Object> data = document.getData();
+                if (data != null) {
+                    messages = (List<Map<String, String>>) data.get("messages");
+                }
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            logger.error("messages error", e);
+            throw new BrokerException("messages() - " + documentId, e);
         }
 
         return messages;

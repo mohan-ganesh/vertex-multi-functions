@@ -5,6 +5,9 @@ import org.springframework.stereotype.Component;
 
 import com.example.multifunctions.api.broker.ChatBroker;
 
+import java.util.List;
+import java.util.Map;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -20,6 +23,11 @@ public class ChatImpl implements IChat {
     public boolean messages(String documentId, String user, String message) {
 
         return chatBroker.messages(documentId, user, message);
+    }
+
+    @Override
+    public List<Map<String, String>> messages(String documentId) {
+        return chatBroker.messages(documentId);
     }
 
 }

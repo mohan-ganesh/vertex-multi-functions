@@ -11,11 +11,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.threeten.bp.LocalDateTime;
 
+import com.example.multifunctions.api.IChat;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 
 import java.util.Base64;
 import java.util.Map;
+import java.util.List;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -23,6 +26,9 @@ import java.util.UUID;
 public class FunctionController extends AbstrtactMultiFunction {
 
     public static Log logger = LogFactory.getLog(FunctionController.class);
+
+    @Autowired
+    IChat iChat;
 
     /**
      *
@@ -42,4 +48,18 @@ public class FunctionController extends AbstrtactMultiFunction {
 
         return ResponseEntity.ok(response);
     }
+
+    /**
+     *
+     * @return String
+     * @throws Exception
+     */
+    @RequestMapping(path = "/v1/messages", method = RequestMethod.POST)
+    public ResponseEntity<List<Map<String, String>>> prompt(
+            @RequestHeader(value = "conversationId", required = true) String conversationId)
+            throws Exception {
+
+        return ResponseEntity.ok(iChat.messages(conversationId));
+    }
+
 }
