@@ -1,6 +1,7 @@
 
 package com.example.multifunctions.controller;
 
+import com.example.multifunctions.api.IChat;
 import com.example.multifunctions.api.IFunctions;
 import com.example.multifunctions.functions.FunctionsDefinitions;
 import com.google.cloud.vertexai.VertexAI;
@@ -36,6 +37,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import java.util.UUID;
 
 /*
 This class demonstrates how to use Gemini  for getting deterministic function call names
@@ -53,7 +55,10 @@ abstract class AbstrtactMultiFunction {
         @Autowired
         IFunctions iFunctions;
 
-        public String service(String promptText) throws Exception {
+        @Autowired
+        IChat iChat;
+
+        public String service(String promptText, String id) throws Exception {
                 GenerateContentResponse response = callModel(promptText);
 
                 Content responseJSONCnt = response.getCandidates(0).getContent();
@@ -62,6 +67,7 @@ abstract class AbstrtactMultiFunction {
                 if (responseJSONCnt.getPartsCount() > 0) {
                         functionResponse = responseJSONCnt.getParts(0);
                 }
+                iChat.messages(id, promptText, responseJSONCnt.getParts(0).toString());
 
                 String functionName;
                 if (functionResponse != null && functionResponse.hasFunctionCall()
