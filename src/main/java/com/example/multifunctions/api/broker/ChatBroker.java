@@ -57,7 +57,7 @@ public class ChatBroker {
                     newMessage.put("message", message);
                     newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
                     messages.add(newMessage);
-                    existingData.put("message", messages);
+                    existingData.put("messages", messages);
                 } else {
                     logger.info(methodName + "appending the data");
                     existingData = new HashMap<>();
@@ -67,13 +67,17 @@ public class ChatBroker {
                     newMessage.put("message", message);
                     newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
                     messages.add(newMessage);
-                    existingData.put("message", messages);
+                    existingData.put("messages", messages);
                 }
 
                 chatDocMessageRef.set(existingData, SetOptions.merge());
             } else {
                 // create new document
                 logger.info(methodName + " create new doc id");
+                Map<String, Object> chatMessage = new HashMap<>();
+                chatMessage.put("sender", sender);
+                chatMessage.put("message", message);
+                chatMessage.put("timestamp", FieldValue.serverTimestamp());
 
                 List<Map<String, String>> messages = new ArrayList<>();
                 Map<String, String> newMessage = new HashMap<>();
@@ -82,10 +86,8 @@ public class ChatBroker {
                 newMessage.put("timestamp", FieldValue.serverTimestamp().toString());
                 messages.add(newMessage);
 
-                Messages data = new Messages(messages);
-
                 ApiFuture<WriteResult> documentReference = firestore.getConnection().collection("chat")
-                        .document(documentId).set(data, SetOptions.merge());
+                        .document(documentId).create(chatMessage);
                 logger.info(documentReference.toString());
             }
         } catch (InterruptedException | ExecutionException e) {
