@@ -16,6 +16,7 @@ import org.springframework.http.HttpStatus;
 
 import java.util.Base64;
 import java.util.Map;
+import java.util.HashMap;
 import java.util.UUID;
 
 @RestController
@@ -29,10 +30,16 @@ public class FunctionController extends AbstrtactMultiFunction {
      * @throws Exception
      */
     @RequestMapping(path = "/v1/prompt", method = RequestMethod.POST)
-    public ResponseEntity<String> prompt(@RequestParam String prompt) throws Exception {
+    public ResponseEntity<Map> prompt(@RequestHeader(value = "conversationId", required = false) String conversationId,
+            @RequestParam String prompt) throws Exception {
 
-        String id = UUID.randomUUID().toString();
-        String funtionName = service(prompt, id);
-        return ResponseEntity.ok(funtionName);
+        String id = (conversationId == null) ? UUID.randomUUID().toString() : conversationId;
+        String answer = service(prompt, id);
+
+        Map response = new HashMap();
+        response.put("conversationId", id);
+        response.put("answer", answer);
+
+        return ResponseEntity.ok(response);
     }
 }

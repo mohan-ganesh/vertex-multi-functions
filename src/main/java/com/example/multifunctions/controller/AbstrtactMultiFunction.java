@@ -62,12 +62,13 @@ abstract class AbstrtactMultiFunction {
                 GenerateContentResponse response = callModel(promptText);
 
                 Content responseJSONCnt = response.getCandidates(0).getContent();
-
+                String answer = null;
                 Part functionResponse = null;
                 if (responseJSONCnt.getPartsCount() > 0) {
                         functionResponse = responseJSONCnt.getParts(0);
+                        answer = responseJSONCnt.getParts(0).toString();
+                        iChat.messages(id, promptText, responseJSONCnt.getParts(0).toString());
                 }
-                iChat.messages(id, promptText, responseJSONCnt.getParts(0).toString());
 
                 String functionName;
                 if (functionResponse != null && functionResponse.hasFunctionCall()
@@ -104,7 +105,7 @@ abstract class AbstrtactMultiFunction {
                         logger.info(responseJSONCnt.toString());
                         // logger.info(functionResponse.toString());
                 }
-                return functionName;
+                return answer;
 
         }
 

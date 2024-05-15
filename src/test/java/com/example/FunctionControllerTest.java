@@ -14,6 +14,7 @@ import com.example.multifunctions.controller.FunctionController;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
+import java.util.Map;
 
 public class FunctionControllerTest {
 
@@ -32,8 +33,8 @@ public class FunctionControllerTest {
     public void testGetUserById_WhenUserExists() throws Exception {
 
         System.out.println(functions);
-        ResponseEntity<String> response = userController
-                .prompt("Could register the user with id w1234 first name John and last name Doe");
+        ResponseEntity<Map> response = userController
+                .prompt("", "Could register the user with id w1234 first name John and last name Doe");
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(String.class, response.getBody());
     }
