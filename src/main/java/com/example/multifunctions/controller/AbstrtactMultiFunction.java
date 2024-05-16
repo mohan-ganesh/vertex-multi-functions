@@ -39,6 +39,7 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import java.util.UUID;
+import com.google.cloud.vertexai.generativeai.ResponseHandler;
 
 /*
 This class demonstrates how to use Gemini  for getting deterministic function call names
@@ -68,6 +69,7 @@ abstract class AbstrtactMultiFunction {
                 if (responseJSONCnt.getPartsCount() > 0) {
                         functionResponse = responseJSONCnt.getParts(0);
                         answer = responseJSONCnt.getParts(0).toString();
+                        ResponseHandler.getText(response);
                         iChat.messages(id, promptText, responseJSONCnt.getParts(0).toString());
                 }
 
