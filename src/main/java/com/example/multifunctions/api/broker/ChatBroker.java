@@ -9,15 +9,12 @@ import com.example.multifunctions.config.FirestoreConfig;
 import com.example.multifunctions.exception.BrokerException;
 import com.google.api.core.ApiFuture;
 import com.google.cloud.firestore.*;
-import com.google.firebase.cloud.FirestoreClient;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
-import java.util.UUID;
-import com.google.cloud.Timestamp;
 
 @Service
 public class ChatBroker {
@@ -27,10 +24,16 @@ public class ChatBroker {
     @Autowired
     FirestoreConfig firestore;
 
+    /**
+     * 
+     * @param documentId
+     * @param sender
+     * @param message
+     * @return
+     */
     public boolean messages(String documentId, String sender, String message) {
 
         String methodName = "messages(S,S,S) - ";
-
         logger.info(methodName + " document id is " + documentId);
 
         // Reference to the specified document in the "chat" collection
@@ -81,24 +84,11 @@ public class ChatBroker {
         return true;
     }
 
-    public List<Map<String, Object>> getAllMessages() {
-        List<Map<String, Object>> messages = new ArrayList<>();
-        // Query the "chat" collection and order by the timestamp
-        ApiFuture<QuerySnapshot> future = firestore.getConnection().collection("chat")
-                .orderBy("timestamp", Query.Direction.ASCENDING).get();
-
-        try {
-            List<QueryDocumentSnapshot> documents = future.get().getDocuments();
-            for (QueryDocumentSnapshot document : documents) {
-                messages.add(document.getData());
-            }
-        } catch (InterruptedException | ExecutionException e) {
-            e.printStackTrace();
-        }
-
-        return messages;
-    }
-
+    /**
+     * 
+     * @param documentId
+     * @return
+     */
     public List<Map<String, String>> messages(String documentId) {
         List<Map<String, String>> messages = new ArrayList<>();
         DocumentReference chatMessageRef = firestore.getConnection().collection("chat").document(documentId);
