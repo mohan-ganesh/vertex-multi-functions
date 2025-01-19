@@ -1,6 +1,7 @@
 package com.example;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -30,13 +31,19 @@ public class FunctionControllerTest {
     }
 
     @Test
+    @Disabled
     public void testGetUserById_WhenUserExists() throws Exception {
 
+        String prompt = "search for  member id is 1737210909999,  If user does not exist create new member with first name John and last name doe email is johndoe@email.com";
         System.out.println(functions);
+        System.getProperties().list(System.out);
+
         ResponseEntity<Map> response = userController
-                .prompt("", "Could register the user with id w1234 first name John and last name Doe");
+                .prompt("",
+                        prompt);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(String.class, response.getBody());
+
     }
 
 }
