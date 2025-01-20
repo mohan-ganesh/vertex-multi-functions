@@ -31,10 +31,10 @@ images:
   - "$_GCR_HOSTNAME/$PROJECT_ID/$_SERVICE_NAME"
 
 substitutions:
-  _SERVICE_NAME: "helpdesk"
+  _SERVICE_NAME: "agent-service"
   _GCR_HOSTNAME: "gcr.io"
   _PLATFORM: "managed"
   _DEPLOY_REGION: "us-central1"
   _AUTH_OPTION: "--allow-unauthenticated"
   _CLOUD_RUN_SECRET_ENV_VARS: "ATLAS_URI=atlas_uri:latest,EMBEDDING_ENDPOINT=embedding_endpoint:latest,MONGODB_URI=mongodb_uri:latest,REDIS_USERNAME=redis_username:latest,REDIS_PASSWORD=redis_password:latest"
-  _CLOUD_RUN_ENV_VARS: "PROJECT_ID=gcp-scvlab-s-l-mgsand-tsai"
+  _CLOUD_RUN_ENV_VARS: "PROJECT_ID=mohanganesh"

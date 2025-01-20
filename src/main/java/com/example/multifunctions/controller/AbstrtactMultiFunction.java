@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 
 import com.example.multifunctions.api.FunctionsImpl;
 import com.example.multifunctions.api.IFunctions;
+import com.example.multifunctions.api.domain.DataBroker;
 import com.example.multifunctions.functions.FunctionsDefinitions;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
@@ -28,16 +29,9 @@ import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import com.google.gson.Gson;
 import com.google.protobuf.Struct;
 
-public abstract class AbstrtactMultiFunction {
+public abstract class AbstrtactMultiFunction extends DataBroker {
 
     public static Log logger = LogFactory.getLog(AbstrtactMultiFunction.class);
-
-    private static Map<String, String> conversationMemory = new HashMap<>();
-
-    public String systemInstructions = "you are a medical helpful assistant.\n" +
-            "Your mission is to find a open appointment for a member for their visit to doctor.\n" +
-            "Create new member if the member does not exist with the first, last names and email address.\n" +
-            "Find available opening slots and confirm the appointment uponn creation.";
 
     private static String modelName = "gemini-1.5-flash-002";
 
@@ -49,14 +43,14 @@ public abstract class AbstrtactMultiFunction {
 
     }
 
-    public static String chatDiscussion(String projectId, String location, String modelName, String prompt, String id)
+    public static String chatDiscussion(String projectId, String location, String modelName, String prompt,
+            String transactionId)
             throws IOException, InterruptedException {
 
         String methodName = "chatDiscussion(S,S,S,S) - ";
         logger.info(methodName + "start");
 
         FunctionsImpl functionsImpl = new FunctionsImpl();
-        StringBuilder conversationHistory = new StringBuilder();
 
         int iteration = 0;
         boolean hasFunctionCall;
@@ -64,8 +58,7 @@ public abstract class AbstrtactMultiFunction {
 
         try (VertexAI vertexAI = new VertexAI(projectId, location)) {
 
-            GenerativeModel model = initializeGenerativeModel(vertexAI, modelName); // Helper function to initialize
-                                                                                    // model (see below)
+            GenerativeModel model = initializeGenerativeModel(vertexAI, modelName);
             ChatSession chatSession = new ChatSession(model);
 
             do {
@@ -75,44 +68,30 @@ public abstract class AbstrtactMultiFunction {
 
                 // Construct Content object with the user's question.
                 Content inputContent = null;
-                logger.info(id);
-                if (conversationMemory.containsKey(id)) {
-                    String existing = conversationMemory.get(id);
-                    conversationHistory.append(answer + "\n" + existing + "\n");
-                    conversationMemory.put(id, conversationHistory.toString());
-
-                } else {
-                    conversationMemory.put(id, answer.toString());
-                }
-                logger.info("history - " + conversationMemory.get(id).toLowerCase());
-
                 if (iteration == 0) {
+                    // read the histry if there is and add the new prompt
+                    String pastChatHistory = readChatHistoryFromStorage(projectId, storageBucketName, transactionId);
 
-                    String newPrompt = "";
-                    if (conversationMemory.containsKey(id)) {
-                        newPrompt = prompt + " . Chat History is " + conversationMemory.get(id).toString();
-                    }
-                    inputContent = Content.newBuilder().setRole("user")
-                            .addParts(Part.newBuilder().setText(newPrompt).build())
+                    inputContent = Content.newBuilder()
+                            .setRole(iteration == 0 ? "user" : "model")
+                            .addParts(Part.newBuilder()
+                                    .setText(iteration == 0 ? prompt + " " + pastChatHistory : answer.toString())
+                                    .build())
                             .build();
 
+                    // Append to conversation history *before* sending to model
+                    String sb = "role:" + inputContent.getRole() + " : " + prompt + "\n";
+
+                    writeChatHistoryToStorage(projectId, storageBucketName, sb, transactionId);
+                    logger.info(inputContent);
+                    Thread.sleep(25000);
+                    modelResponse = chatSession.sendMessage(inputContent);
                 } else {
-
-                    String newPrompt = "";
-                    if (conversationMemory.containsKey(id)) {
-                        newPrompt = answer.toString() + " . Chat History is " + conversationMemory.get(id).toString();
-                    }
-
-                    inputContent = Content.newBuilder().setRole("model")
-                            .addParts(Part.newBuilder().setText(newPrompt).build())
-                            .build();
-
+                    String chatHistory = readChatHistoryFromStorage(projectId, storageBucketName, transactionId);
+                    logger.info(chatHistory);
+                    Thread.sleep(25000);
+                    modelResponse = chatSession.sendMessage(chatHistory);
                 }
-
-                logger.info(inputContent.toString());
-
-                Thread.sleep(20000);
-                modelResponse = chatSession.sendMessage(inputContent);
 
                 if (modelResponse == null || modelResponse.getCandidatesList().isEmpty()) {
                     logger.error(methodName + "gemini returned no response or candidates for prompt.");
@@ -132,7 +111,6 @@ public abstract class AbstrtactMultiFunction {
                         for (Part part : resContent.getPartsList()) {
                             if (part.hasText()) {
                                 String modelText = part.getText();
-                                logger.info(part.toString());
                                 logger.info(methodName + "text: " + modelText);
                                 currentTurn.append(modelText).append(" ");
                             } else if (part.hasFunctionCall()) {
@@ -153,11 +131,13 @@ public abstract class AbstrtactMultiFunction {
                                         logger.info(functionCall + " start");
                                         functionResult = functionsImpl.createAppointment(args);
                                         logger.info(methodName + "response " + functionResult);
+
                                         break;
                                     case "search_member":
                                         logger.info(functionCall + " start");
                                         functionResult = functionsImpl.searchMember(args);
                                         logger.info(methodName + "response " + functionResult);
+
                                         break;
                                     case "create_member":
                                         logger.info(functionCall + " start");
@@ -174,51 +154,31 @@ public abstract class AbstrtactMultiFunction {
                             }
                         } // end of part for loop
 
+                        if (currentTurn.length() > 0) {
+                            answer = currentTurn.toString();
+                            writeChatHistoryToStorage(projectId, storageBucketName,
+                                    "role:model : " + currentTurn.toString(),
+                                    transactionId);
+
+                        }
                         if (functionResult != null) {
                             answer = functionResult;
-                            conversationHistory.append(functionResult).append("\n");
+                            writeChatHistoryToStorage(projectId, storageBucketName, "role:model : " + functionResult,
+                                    transactionId);
                         }
-                        if (currentTurn.length() > 0) {
-                            answer = currentTurn.toString().trim();
-                        }
+
                     } // end of content if loop
 
                 } // end of if
 
                 iteration++;
-                logger.info("current iteration is " + iteration);
+                logger.info(methodName + "current iteration is " + iteration);
             } // end of do loop
-            while (iteration < 5 && hasFunctionCall);
+            while (iteration < 3 && hasFunctionCall);
         } // end of try
-
         logger.info(methodName + "end");
         return answer.toString();
 
     } // end of chatDiscussion
 
-    private static GenerativeModel initializeGenerativeModel(VertexAI vertexAI, String modelName) {
-        // ... (set generation config, safety settings, tools, etc., as needed)
-        // Construct and return the GenerativeModel
-        String systemInstructions = "you are a helpful assistant.\n" +
-                "Your mission is to find a open appointment for a given member.\n" +
-                "Create new member if the member does not exist with the first, last names and email address.\n"
-                +
-                "Find the openings  availbale confirm the appointment";
-
-        GenerationConfig generationConfig = GenerationConfig.newBuilder()
-                .setMaxOutputTokens(2048)
-                .setTemperature(0.5F)
-                .setTopK(32)
-                .setTopP(1)
-                .build();
-
-        Tool tools = Tool.newBuilder()
-                .addAllFunctionDeclarations(
-                        FunctionsDefinitions.getInstance().getFunctionDeclarations())
-                .build();
-
-        return new GenerativeModel(modelName, vertexAI).withGenerationConfig(generationConfig)
-                .withSystemInstruction(ContentMaker.fromString(systemInstructions)).withTools(Arrays.asList(tools));
-
-    }
 }

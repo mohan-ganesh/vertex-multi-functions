@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.List;
 import java.util.HashMap;
 import java.util.UUID;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
 public class FunctionController extends AbstrtactMultiFunction {
@@ -37,7 +38,7 @@ public class FunctionController extends AbstrtactMultiFunction {
      */
     @RequestMapping(path = "/v1/prompt", method = RequestMethod.POST)
     public ResponseEntity<Map> prompt(@RequestHeader(value = "conversationId", required = false) String conversationId,
-            @RequestParam String prompt) throws Exception {
+            @RequestBody String prompt) throws Exception {
 
         String id = (conversationId == null) ? UUID.randomUUID().toString() : conversationId;
         String answer = service(prompt, id);

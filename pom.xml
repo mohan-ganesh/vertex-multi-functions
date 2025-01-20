@@ -10,7 +10,7 @@
         <relativePath /> <!-- lookup parent from repository -->
     </parent>
     <groupId>gemini-multifunctions</groupId>
-    <artifactId>http-multifunctions</artifactId>
+    <artifactId>appointment-service</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
