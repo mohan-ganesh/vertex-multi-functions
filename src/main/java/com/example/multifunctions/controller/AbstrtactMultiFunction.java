@@ -3,6 +3,7 @@ package com.example.multifunctions.controller;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +32,8 @@ public abstract class AbstrtactMultiFunction {
 
     public static Log logger = LogFactory.getLog(AbstrtactMultiFunction.class);
 
+    private static Map<String, String> conversationMemory = new HashMap<>();
+
     public String systemInstructions = "you are a medical helpful assistant.\n" +
             "Your mission is to find a open appointment for a member for their visit to doctor.\n" +
             "Create new member if the member does not exist with the first, last names and email address.\n" +
@@ -42,19 +45,18 @@ public abstract class AbstrtactMultiFunction {
 
     public String service(String promptText, String id) throws Exception {
 
-        return chatDiscussion("mohanganesh", location, modelName, promptText);
+        return chatDiscussion("mohanganesh", location, modelName, promptText, id);
 
     }
 
-    public static String chatDiscussion(String projectId, String location, String modelName, String prompt)
+    public static String chatDiscussion(String projectId, String location, String modelName, String prompt, String id)
             throws IOException, InterruptedException {
 
         String methodName = "chatDiscussion(S,S,S,S) - ";
         logger.info(methodName + "start");
 
         FunctionsImpl functionsImpl = new FunctionsImpl();
-        List<Map<String, String>> conversationHistory = new ArrayList<>();
-        conversationHistory.add(Map.of("role", "user", "content", prompt));
+        StringBuilder conversationHistory = new StringBuilder();
 
         int iteration = 0;
         boolean hasFunctionCall;
@@ -73,18 +75,42 @@ public abstract class AbstrtactMultiFunction {
 
                 // Construct Content object with the user's question.
                 Content inputContent = null;
+                logger.info(id);
+                if (conversationMemory.containsKey(id)) {
+                    String existing = conversationMemory.get(id);
+                    conversationHistory.append(answer + "\n" + existing + "\n");
+                    conversationMemory.put(id, conversationHistory.toString());
+
+                } else {
+                    conversationMemory.put(id, answer.toString());
+                }
+                logger.info("history - " + conversationMemory.get(id).toLowerCase());
 
                 if (iteration == 0) {
+
+                    String newPrompt = "";
+                    if (conversationMemory.containsKey(id)) {
+                        newPrompt = prompt + " . Chat History is " + conversationMemory.get(id).toString();
+                    }
                     inputContent = Content.newBuilder().setRole("user")
-                            .addParts(Part.newBuilder().setText(prompt).build())
+                            .addParts(Part.newBuilder().setText(newPrompt).build())
                             .build();
+
                 } else {
+
+                    String newPrompt = "";
+                    if (conversationMemory.containsKey(id)) {
+                        newPrompt = answer.toString() + " . Chat History is " + conversationMemory.get(id).toString();
+                    }
+
                     inputContent = Content.newBuilder().setRole("model")
-                            .addParts(Part.newBuilder().setText(answer.toString()).build())
+                            .addParts(Part.newBuilder().setText(newPrompt).build())
                             .build();
+
                 }
 
                 logger.info(inputContent.toString());
+
                 Thread.sleep(20000);
                 modelResponse = chatSession.sendMessage(inputContent);
 
@@ -147,9 +173,10 @@ public abstract class AbstrtactMultiFunction {
                                 logger.info(methodName + "structured Data: " + part.toString());
                             }
                         } // end of part for loop
-                        conversationHistory.add(Map.of("role", "model", "content", currentTurn.toString().trim()));
+
                         if (functionResult != null) {
                             answer = functionResult;
+                            conversationHistory.append(functionResult).append("\n");
                         }
                         if (currentTurn.length() > 0) {
                             answer = currentTurn.toString().trim();
