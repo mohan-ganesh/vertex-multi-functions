@@ -1,5 +1,5 @@
 
-FROM maven:3.8.3-openjdk-17-slim as builder
+FROM maven:3.9.9-amazoncorretto-21 as builder
 
 # Copy local code to the container image.
 WORKDIR /app
@@ -10,7 +10,8 @@ COPY src ./src
 RUN mvn clean package -DskipTests
 
 
-FROM openjdk:17-alpine3.14
+FROM amazoncorretto:21.0.5-al2-generic
+
 
 # Copy the jar to the production image from the builder stage.
 COPY --from=builder /app/target/appointment-service*.jar /appointment-service.jar
