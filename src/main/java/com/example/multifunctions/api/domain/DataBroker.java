@@ -23,7 +23,7 @@ public class DataBroker {
 
     public static Log logger = LogFactory.getLog(DataBroker.class);
 
-    public static String storageBucketName = "healthclaims";
+    public static String storageBucketName = System.getenv("GS_BUCKET");
 
     /**
      * 
@@ -42,13 +42,14 @@ public class DataBroker {
         try {
             byte[] content = storage.readAllBytes(blobId);
             chatHistory = new String(content, StandardCharsets.UTF_8);
-            logger.info("Chat history read from Google Cloud Storage: gs://" + bucketName + "/" + blobId.getName());
+            // logger.info("Chat history read from Google Cloud Storage: gs://" + bucketName
+            // + "/" + blobId.getName());
 
         } catch (com.google.cloud.storage.StorageException e) {
             if (e.getCode() == 404) {
-                logger.info("Blob not found. Returning empty chat history.");
+                // logger.info("Blob not found. Returning empty chat history.");
             } else {
-                logger.error("Error reading from GCS:", e);
+                // logger.error("Error reading from GCS:", e);
                 // Handle other errors as needed
                 throw e; // Or handle differently based on your requirements
             }
@@ -103,6 +104,7 @@ public class DataBroker {
                 "Create new member if the member does not exist. Use member first, last names and email address for new member creation.\n"
                 +
                 "Find the openings  availbale confirm the appointment. \n" +
+                "Highlight the member name and confirmation number once the appointment is created.\n" +
                 "Read the chat histry carefully by reading the chat history timeline.";
 
         GenerationConfig generationConfig = GenerationConfig.newBuilder()

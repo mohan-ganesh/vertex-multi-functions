@@ -50,7 +50,7 @@ public class ChatInteraction extends DataBroker {
 
     public static Log logger = LogFactory.getLog(ChatInteraction.class);
 
-    public static String storageBucketName = "healthclaims";
+  
 
     public static void main(String[] args) throws IOException {
 

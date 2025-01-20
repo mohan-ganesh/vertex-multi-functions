@@ -35,9 +35,9 @@ public class FunctionsImpl implements IFunctions, Constants {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Member member = new Member();
-        member.setEmail(args.getFieldsMap().get(Constants.EMAIL_KEY).toString());
-        member.setFirstName(args.getFieldsMap().get(Constants.FIRSTNAME_KEY).toString());
-        member.setLastName(args.getFieldsMap().get(Constants.LASTNAME_KEY).toString());
+        member.setEmail(getAsString(args, Constants.EMAIL_KEY));
+        member.setFirstName(getAsString(args, Constants.FIRSTNAME_KEY));
+        member.setLastName(getAsString(args, Constants.LASTNAME_KEY));
         member.setMemberId("" + System.currentTimeMillis());
         // Create request body
         HttpEntity<Member> request = new HttpEntity<>(member, headers);
@@ -68,24 +68,7 @@ public class FunctionsImpl implements IFunctions, Constants {
         // Create RestTemplate instance
         RestTemplate restTemplate = new RestTemplate();
 
-        // Send GET request
-        Value memberIdValue = args.getFieldsMap().get(Constants.MEMBER_ID_KEY);
-        String member_id = null;
-        if (memberIdValue != null) {
-            if (memberIdValue.getKindCase() == Value.KindCase.STRING_VALUE) {
-                member_id = memberIdValue.getStringValue();
-            } else {
-
-                logger.warn("member_id is not a string: " + memberIdValue.getKindCase());
-
-            }
-        } else {
-
-            logger.warn("member_id key not found in the arguments.");
-            // Or throw an exception: throw new IllegalArgumentException("Missing member_id
-            // argument");
-
-        }
+        String member_id = getAsString(args, Constants.MEMBER_ID_KEY);
 
         String formattedUrl = API_URL + "/user/" + member_id;
         logger.info(formattedUrl);
@@ -106,10 +89,10 @@ public class FunctionsImpl implements IFunctions, Constants {
         headers.setContentType(MediaType.APPLICATION_JSON);
 
         Member member = new Member();
-        member.setEmail(args.getFieldsMap().get(Constants.EMAIL_KEY).toString());
-        member.setFirstName(args.getFieldsMap().get(Constants.FIRSTNAME_KEY).toString());
-        member.setLastName(args.getFieldsMap().get(Constants.LASTNAME_KEY).toString());
-        member.setMemberId(args.getFieldsMap().get(Constants.MEMBER_ID_KEY).toString());
+        member.setEmail(getAsString(args, Constants.EMAIL_KEY));
+        member.setFirstName(getAsString(args, Constants.FIRSTNAME_KEY));
+        member.setLastName(getAsString(args, Constants.LASTNAME_KEY));
+        member.setMemberId(getAsString(args, Constants.MEMBER_ID_KEY));
         // Create request body
         HttpEntity<Member> request = new HttpEntity<>(member, headers);
 
@@ -150,6 +133,27 @@ public class FunctionsImpl implements IFunctions, Constants {
         logger.info("findOpenAppointments() - end" + responseBody);
         return responseBody;
 
+    }
+
+    /**
+     * 
+     * @param args
+     * @param key
+     * @return
+     */
+    private String getAsString(Struct args, String key) {
+        Value value = args.getFieldsMap().get(key);
+        if (value != null) {
+            if (value.getKindCase() == Value.KindCase.STRING_VALUE) {
+                return value.getStringValue();
+            } else {
+                logger.warn(key + " is not a string: " + value.getKindCase());
+                return "no-value";
+            }
+        } else {
+            logger.warn(key + " not found in the arguments.");
+            return "no-value";
+        }
     }
 
 }

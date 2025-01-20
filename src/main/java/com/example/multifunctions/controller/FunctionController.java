@@ -21,9 +21,12 @@ import java.util.Map;
 import java.util.List;
 import java.util.HashMap;
 import java.util.UUID;
+
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
+@CrossOrigin(origins = "http://localhost:4200")
 public class FunctionController extends AbstrtactMultiFunction {
 
     public static Log logger = LogFactory.getLog(FunctionController.class);
@@ -37,16 +40,15 @@ public class FunctionController extends AbstrtactMultiFunction {
      * @throws Exception
      */
     @RequestMapping(path = "/v1/prompt", method = RequestMethod.POST)
-    public ResponseEntity<Map> prompt(@RequestHeader(value = "conversationId", required = false) String conversationId,
+    public ResponseEntity<Map> prompt(@RequestHeader(value = "queryId", required = false) String queryId,
             @RequestBody String prompt) throws Exception {
 
-        String id = (conversationId == null) ? UUID.randomUUID().toString() : conversationId;
+        String id = (queryId == null) ? UUID.randomUUID().toString() : queryId;
         String answer = service(prompt, id);
 
         Map response = new HashMap();
-        response.put("conversationId", id);
+        response.put("queryId", id);
         response.put("answer", answer);
-
         return ResponseEntity.ok(response);
     }
 
