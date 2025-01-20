@@ -108,7 +108,7 @@ public class DataBroker {
                 +
                 "4. **Confirm Appointment Details**:Verify the preferred day and time with the user before booking the appointment.\n"
                 +
-                "5. **Provide Confirmation**:Once the appointment is scheduled, clearly highlight the member's name and the confirmation number.\n"
+                "5. **Provide Confirmation**:Once the appointment is scheduled, clearly highlight the member's name and the confirmation code.\n"
                 +
                 "6. **Review Chat History**:Always read the chat history thoroughly to maintain context and provide accurate assistance.";
 
