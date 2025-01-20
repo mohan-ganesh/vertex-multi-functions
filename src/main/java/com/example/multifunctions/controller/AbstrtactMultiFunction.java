@@ -38,8 +38,8 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
     private String location = "us-central1";
 
     public String service(String promptText, String id) throws Exception {
-
-        return chatDiscussion("mohanganesh", location, modelName, promptText, id);
+        Sting project_id = System.getenv("PROJECT_ID");)
+        return chatDiscussion(project_id, location, modelName, promptText, id);
 
     }
 
