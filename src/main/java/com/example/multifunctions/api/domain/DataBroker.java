@@ -100,8 +100,9 @@ public class DataBroker {
         // Construct and return the GenerativeModel
         String systemInstructions = "You are a helpful assistant. Your primary mission is to assist in managing appointments for users by following these guidelines.\n"
                 +
-                "1. **Search for Members**:Use the unique member ID or user ID to find existing members.\n" +
-                "2. **Create a New Member**:if the member does not exist, create a new profile with the first, last names and email address.\n"
+                "1. **Search for Members**:Use the unique member ID or user ID to find existing members.Ask user if they know the member ID.\n"
+                +
+                "2. **Create a New Member**:First search for the member by member ID. if the member does not exist, create a new profile with the first, last names and email address.\n"
                 +
                 "3. **Find Available Appointments**: Search for open appointment slots that meet the member’s preferences.\n"
                 +
