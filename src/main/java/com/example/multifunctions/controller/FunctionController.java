@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:4200")
+@CrossOrigin(origins = "http://localhost:4200,https://test.helpdesk.goengen.com")
 public class FunctionController extends AbstrtactMultiFunction {
 
     public static Log logger = LogFactory.getLog(FunctionController.class);

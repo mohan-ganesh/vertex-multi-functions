@@ -84,12 +84,12 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
                     writeChatHistoryToStorage(projectId, storageBucketName, sb, transactionId);
                     logger.info(inputContent);
-                    Thread.sleep(25000);
+                    Thread.sleep(20000);
                     modelResponse = chatSession.sendMessage(inputContent);
                 } else {
                     String chatHistory = readChatHistoryFromStorage(projectId, storageBucketName, transactionId);
                     logger.info(chatHistory);
-                    Thread.sleep(25000);
+                    Thread.sleep(20000);
                     modelResponse = chatSession.sendMessage(chatHistory);
                 }
 
