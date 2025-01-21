@@ -1,5 +1,7 @@
 package com.example.multifunctions.api;
 
+import java.util.Random;
+
 import org.apache.commons.logging.Log;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -38,7 +40,7 @@ public class FunctionsImpl implements IFunctions, Constants {
         member.setEmail(getAsString(args, Constants.EMAIL_KEY));
         member.setFirstName(getAsString(args, Constants.FIRSTNAME_KEY));
         member.setLastName(getAsString(args, Constants.LASTNAME_KEY));
-        member.setMemberId("" + System.currentTimeMillis());
+        member.setMemberId(generateRandomPhoneNumber());
         // Create request body
         HttpEntity<Member> request = new HttpEntity<>(member, headers);
 
@@ -154,6 +156,22 @@ public class FunctionsImpl implements IFunctions, Constants {
             logger.warn(key + " not found in the arguments.");
             return "no-value";
         }
+    }
+
+    public static String generateRandomPhoneNumber() {
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+
+        for (int i = 0; i < 3; i++) {
+            sb.append(random.nextInt(1000));
+            if (i < 2) {
+                sb.append("-");
+            }
+        }
+
+        return String.format("%03d-%03d-%03d",
+                random.nextInt(1000), random.nextInt(1000), random.nextInt(1000));
+
     }
 
 }

@@ -100,12 +100,6 @@ public class FunctionsDefinitions implements Constants {
                                 .setParameters(
                                                 Schema.newBuilder()
                                                                 .setType(Type.OBJECT)
-                                                                .putProperties("member_id", Schema.newBuilder()
-                                                                                .setType(Type.STRING)
-                                                                                .setDescription(
-                                                                                                "Unique member or user id of the type alphanumeric character")
-                                                                                .build())
-                                                                .addRequired("member_id")
                                                                 .putProperties("firstName", Schema.newBuilder()
                                                                                 .setType(Type.STRING)
                                                                                 .setDescription(
@@ -117,7 +111,7 @@ public class FunctionsDefinitions implements Constants {
                                                                                 .setDescription(
                                                                                                 "Member last name")
                                                                                 .build())
-                                                                .addRequired("firstName")
+                                                                .addRequired("lastName")
                                                                 .putProperties("email", Schema.newBuilder()
                                                                                 .setType(Type.STRING)
                                                                                 .setDescription(
