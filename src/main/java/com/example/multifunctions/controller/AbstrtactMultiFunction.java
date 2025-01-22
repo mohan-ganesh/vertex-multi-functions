@@ -37,6 +37,15 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
     private String location = "us-central1";
 
+    private static String threadSleepTime = System.getenv("THREAD_SLEEP_TIME");
+
+    // Add an initializer block to set the default value if threadSleepTime is null
+    {
+        if (threadSleepTime == null) {
+            threadSleepTime = "2500";
+        }
+    }
+
     public String service(String promptText, String id) throws Exception {
         String project_id = System.getenv("PROJECT_ID");
         return chatDiscussion(project_id, location, modelName, promptText, id);
@@ -84,12 +93,12 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
                     writeChatHistoryToStorage(projectId, storageBucketName, sb, transactionId);
                     logger.info(inputContent);
-                    Thread.sleep(20000);
+                    Thread.sleep(Long.parseLong(threadSleepTime));
                     modelResponse = chatSession.sendMessage(inputContent);
                 } else {
                     String chatHistory = readChatHistoryFromStorage(projectId, storageBucketName, transactionId);
                     logger.info(chatHistory);
-                    Thread.sleep(20000);
+                    Thread.sleep(Long.parseLong(threadSleepTime));
                     modelResponse = chatSession.sendMessage(chatHistory);
                 }
 
