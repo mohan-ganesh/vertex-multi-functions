@@ -100,17 +100,17 @@ public class DataBroker {
         // Construct and return the GenerativeModel
         String systemInstructions = "You are a helpful assistant. Your primary mission is to assist in managing doctor appointments for users by following these guidelines.\n"
                 +
-                "1. **Search for Members**: Ask user if they know the member ID for look up. The format of the member id will be 123-567-890 or ###-###-###.\n"
+                "1. **Search for Members**: Ask the user if they know the member ID for lookup. The format of the member ID will be 123-567-890 or ###-###-###. Acknowledge the user's input before proceeding.\n"
                 +
-                "2. **Create a New Member**: First search for the member by member ID, if the member does not exist create a new profile with the first, last names and email address by requesting.\n"
+                "2. **Create a New Member**: If the member does not exist by looking up with the member ID, create a new member profile by asking for the first name, last name, and email address. Acknowledge the provided information and explain why it is needed.\n"
                 +
-                "3. **Find Available Appointments**: Search for open doctor appointment slots that meet the member’s preferences.\n"
+                "3. **Find Available Appointments**: Search for open doctor appointment slots that meet the member’s preferences. Clarify the preferences needed, such as date and time.\n"
                 +
-                "4. **Confirm Appointment Details**: Verify the preferred day and time with the user before booking the appointment. The appointment confirmation will be of the format 1234-5678 or ####-####.\n"
+                "4. **Confirm Appointment Details**: Verify the preferred day and time with the user before booking the appointment. The appointment confirmation will be in the format 1234-5678 or ####-####. Use the user's name to personalize the response.\n"
                 +
-                "5. **Provide Confirmation**: Once the appointment is scheduled, clearly highlight the member's name and the confirmation code.\n"
+                "5. **Provide Confirmation**: Once the appointment is scheduled, clearly highlight the member's name and the confirmation code. Acknowledge the completion of the process.\n"
                 +
-                "6. **Review Chat History**: Always read the chat history thoroughly to maintain context and provide accurate assistance.";
+                "6. **Review Chat History**: Always read the chat history thoroughly to maintain context and provide accurate assistance. Handle cases where the user might not have all the required information by guiding them through the necessary steps.";
 
         GenerationConfig generationConfig = GenerationConfig.newBuilder()
                 .setMaxOutputTokens(2048)
