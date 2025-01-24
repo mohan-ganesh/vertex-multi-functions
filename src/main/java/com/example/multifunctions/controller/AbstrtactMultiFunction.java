@@ -3,6 +3,7 @@ package com.example.multifunctions.controller;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,7 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
                 if (chatHistoryCache.get(transactionId) != null) {
                     List<Content> content = chatHistoryCache.get(transactionId);
+                    Collections.reverse(content);
                     logger.info("inside do loop that is set to histry -" + content);
                     chatSession.setHistory(content);
                 } else {
@@ -189,6 +191,7 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
                                 FunctionCall functionCall = part.getFunctionCall();
                                 String functionName = functionCall.getName();
+                                logger.info("*** " + functionName + "***");
                                 Struct args = functionCall.getArgs();
 
                                 switch (functionName) {

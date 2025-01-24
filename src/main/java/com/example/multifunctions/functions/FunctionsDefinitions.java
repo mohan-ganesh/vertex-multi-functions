@@ -22,7 +22,7 @@ public class FunctionsDefinitions implements Constants {
 
                 FunctionDeclaration functionDeclaration_latlong = FunctionDeclaration.newBuilder()
                                 .setName("confirm_appointment")
-                                .setDescription("Confirm the appointment at the give member email address.")
+                                .setDescription("Confirm the appointment for the given member id and email address.")
                                 .setParameters(
                                                 Schema.newBuilder()
                                                                 .setType(Type.OBJECT)
@@ -58,7 +58,7 @@ public class FunctionsDefinitions implements Constants {
                 /* Declare the function for the API that we want to invoke for latlang */
                 FunctionDeclaration functionDeclaration_medical_appointment = FunctionDeclaration.newBuilder()
                                 .setName("get_appointment")
-                                .setDescription("Check for any open slot appointments for medical hospital.")
+                                .setDescription("Check for any open slot appointments for doctor visit.")
                                 .setParameters(
                                                 Schema.newBuilder()
                                                                 .setType(Type.OBJECT)
@@ -83,13 +83,7 @@ public class FunctionsDefinitions implements Constants {
                                                                                 .setType(Type.STRING)
                                                                                 // ...
                                                                                 .build())
-                                                                .putProperties("zipcode", Schema.newBuilder() // Add
-                                                                                                              // zipcode
-                                                                                                              // definition
-                                                                                .setType(Type.STRING)
-                                                                                .setDescription("The member's zipcode")
-                                                                                .build())
-                                                                .addRequired("zipcode") // Now this is correct
+                                                                .addRequired("member_id") // Now this is correct
                                                                 .build())
                                 .build();
 
@@ -103,7 +97,7 @@ public class FunctionsDefinitions implements Constants {
                                                                 .putProperties("firstName", Schema.newBuilder()
                                                                                 .setType(Type.STRING)
                                                                                 .setDescription(
-                                                                                                "Member First Name")
+                                                                                                "Member first name")
                                                                                 .build())
                                                                 .addRequired("firstName")
                                                                 .putProperties("lastName", Schema.newBuilder()

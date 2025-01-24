@@ -69,8 +69,11 @@ public class DataBroker {
 
     protected static void writeChatHistoryToStorage(String projectId, String bucketName, String chatHistory,
             String transactionId) throws IOException {
+        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd"); // Date format
+        String dateString = dateFormat.format(new Date());
+
         Storage storage = StorageOptions.newBuilder().setProjectId(projectId).build().getService();
-        BlobId blobId = BlobId.of(bucketName, transactionId + ".txt");
+        BlobId blobId = BlobId.of(bucketName, transactionId + "_" + dateString + ".txt");
         String timestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()); // Generate timestamp
 
         try {
@@ -100,13 +103,13 @@ public class DataBroker {
         // Construct and return the GenerativeModel
         String systemInstructions = "You are a helpful assistant. Your primary mission is to assist in managing doctor appointments for users by following these guidelines.\n"
                 +
-                "1. **Search for Members**: Ask the user if they know the member ID for lookup. The format of the member ID will be 123-567-890 or ###-###-###. Acknowledge the user's input before proceeding.\n"
+                "1. **Search for Members**: Ask the user if they know the member id for lookup. The format of the member id will be ###-###-### format. Acknowledge the user's input before proceeding.\n"
                 +
-                "2. **Create a New Member**: If the member does not exist by looking up with the member ID, create a new member profile by asking for the first name, last name, and email address. Acknowledge the provided information and explain why it is needed.\n"
+                "2. **Create a New Member**: If the member does not exist by looking up with the member id, create a new member profile by asking for the first name, last name, and email address and invoke create_member API.. Acknowledge the provided information and explain why it is needed, also confirm new system generated member id to user.\n"
                 +
-                "3. **Find Available Appointments**: Search for open doctor appointment slots that meet the member’s preferences. Clarify the preferences needed, such as date and time.\n"
+                "3. **Find Available Appointments**: After either member creation or lookup member by id, Search for open doctor appointment slots that meet the member’s preferences. Clarify the preferences needed, such as date and time.\n"
                 +
-                "4. **Confirm Appointment Details**: Verify the preferred day and time with the user before booking the appointment. The appointment confirmation will be in the format 1234-5678 or ####-####. Use the user's name to personalize the response.\n"
+                "4. **Confirm Appointment Details**: Verify the preferred day  with the user before booking the appointment. Create the new schedule and confirm the appointment by invoking the confirm_appointment API, and share confirmation number ####-#### format. Use the user's name to personalize the response.\n"
                 +
                 "5. **Provide Confirmation**: Once the appointment is scheduled, clearly highlight the member's name and the confirmation code. Acknowledge the completion of the process.\n"
                 +
