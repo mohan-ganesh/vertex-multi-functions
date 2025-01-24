@@ -39,10 +39,17 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
     private static String threadSleepTime = System.getenv("THREAD_SLEEP_TIME");
 
+    // added map based cache initilazation that takes trasnaction id, list of
+    // ordered Content object
+    private static Map<String, List<Content>> chatHistoryCache = new HashMap<>();
+
+    @Autowired
+    IFunctions iFunctions;
+
     // Add an initializer block to set the default value if threadSleepTime is null
     {
         if (threadSleepTime == null) {
-            threadSleepTime = "2500";
+            threadSleepTime = "25000";
         }
     }
 
@@ -68,7 +75,10 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
         try (VertexAI vertexAI = new VertexAI(projectId, location)) {
 
             GenerativeModel model = initializeGenerativeModel(vertexAI, modelName);
+            model.startChat();
             ChatSession chatSession = new ChatSession(model);
+
+            String modelResponseOutput = "";
 
             do {
                 hasFunctionCall = false;
@@ -77,6 +87,15 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
                 // Construct Content object with the user's question.
                 Content inputContent = null;
+
+                if (chatHistoryCache.get(transactionId) != null) {
+                    List<Content> content = chatHistoryCache.get(transactionId);
+                    logger.info("inside do loop that is set to histry -" + content);
+                    chatSession.setHistory(content);
+                } else {
+                    logger.info("inside do loop that is not set to histry");
+                }
+
                 if (iteration == 0) {
                     // read the histry if there is and add the new prompt
                     String pastChatHistory = readChatHistoryFromStorage(projectId, storageBucketName, transactionId);
@@ -84,22 +103,48 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                     inputContent = Content.newBuilder()
                             .setRole(iteration == 0 ? "user" : "model")
                             .addParts(Part.newBuilder()
-                                    .setText(iteration == 0 ? prompt + " " + pastChatHistory : answer.toString())
+                                    .setText(iteration == 0 ? prompt : answer.toString())
                                     .build())
                             .build();
 
                     // Append to conversation history *before* sending to model
                     String sb = "role:" + inputContent.getRole() + " : " + prompt + "\n";
-
                     writeChatHistoryToStorage(projectId, storageBucketName, sb, transactionId);
                     logger.info(inputContent);
+
                     Thread.sleep(Long.parseLong(threadSleepTime));
                     modelResponse = chatSession.sendMessage(inputContent);
+
+                    if (chatHistoryCache.get(transactionId) != null) {
+                        List<Content> content = chatHistoryCache.get(transactionId);
+                        content.add(inputContent);
+                        chatHistoryCache.put(transactionId, content);
+                    } else {
+                        List<Content> content = new ArrayList<>();
+                        content.add(inputContent);
+                        chatHistoryCache.put(transactionId, content);
+                        logger.info("initialize chat histoy");
+                    }
+
                 } else {
                     String chatHistory = readChatHistoryFromStorage(projectId, storageBucketName, transactionId);
                     logger.info(chatHistory);
                     Thread.sleep(Long.parseLong(threadSleepTime));
-                    modelResponse = chatSession.sendMessage(chatHistory);
+
+                    modelResponse = chatSession.sendMessage(modelResponseOutput);
+
+                    //
+                    // add the function result for the next input cycle
+                    Content modelContent = Content.newBuilder()
+                            .setRole("model")
+                            .addParts(Part.newBuilder().setText(modelResponseOutput).build())
+                            .build();
+
+                    if (chatHistoryCache.get(transactionId) != null) {
+                        List<Content> content = chatHistoryCache.get(transactionId);
+                        content.add(modelContent);
+                        chatHistoryCache.put(transactionId, content);
+                    }
                 }
 
                 if (modelResponse == null || modelResponse.getCandidatesList().isEmpty()) {
@@ -121,7 +166,23 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                             if (part.hasText()) {
                                 String modelText = part.getText();
                                 logger.info(methodName + "text: " + modelText);
-                                currentTurn.append(modelText).append(" ");
+                                writeChatHistoryToStorage(projectId, storageBucketName, "role:model : " + modelText,
+                                        transactionId);
+                                modelResponseOutput = modelText;
+                                answer = modelText;
+
+                                // add the function result for the next input cycle
+                                Content modelContent = Content.newBuilder()
+                                        .setRole("model")
+                                        .addParts(Part.newBuilder().setText(modelResponseOutput).build())
+                                        .build();
+
+                                if (chatHistoryCache.get(transactionId) != null) {
+                                    List<Content> content = chatHistoryCache.get(transactionId);
+                                    content.add(modelContent);
+                                    chatHistoryCache.put(transactionId, content);
+                                }
+
                             } else if (part.hasFunctionCall()) {
                                 logger.info(methodName + "function Call: " + part.getFunctionCall());
                                 hasFunctionCall = true;
@@ -134,47 +195,55 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                                     case "get_appointment":
                                         logger.info(functionCall + " start");
                                         functionResult = functionsImpl.findOpenAppointments(args);
+                                        writeChatHistoryToStorage(projectId, storageBucketName,
+                                                "role:model : " + functionResult,
+                                                transactionId);
+                                        answer = functionResult;
                                         logger.info(methodName + "response " + functionResult);
                                         break;
                                     case "confirm_appointment":
                                         logger.info(functionCall + " start");
                                         functionResult = functionsImpl.createAppointment(args);
+                                        writeChatHistoryToStorage(projectId, storageBucketName,
+                                                "role:model : " + functionResult,
+                                                transactionId);
                                         logger.info(methodName + "response " + functionResult);
 
                                         break;
                                     case "search_member":
                                         logger.info(functionCall + " start");
                                         functionResult = functionsImpl.searchMember(args);
+                                        writeChatHistoryToStorage(projectId, storageBucketName,
+                                                "role:model : " + functionResult,
+                                                transactionId);
+                                        answer = functionResult;
                                         logger.info(methodName + "response " + functionResult);
 
                                         break;
                                     case "create_member":
                                         logger.info(functionCall + " start");
                                         functionResult = functionsImpl.createMember(args);
+                                        writeChatHistoryToStorage(projectId, storageBucketName,
+                                                "role:model : " + functionResult,
+                                                transactionId);
+                                        answer = functionResult;
                                         logger.info(methodName + " response " + functionResult);
                                         break;
 
                                     default:
+                                        logger.error(methodName + "reached default");
                                         break;
                                 }
 
+                                modelResponseOutput = functionResult;
                             } else {
-                                logger.info(methodName + "structured Data: " + part.toString());
+                                if (part != null) {
+                                    logger.info(methodName + "structured Data: " + part.toString());
+                                    answer = part.toString();
+                                }
+
                             }
                         } // end of part for loop
-
-                        if (currentTurn.length() > 0) {
-                            answer = currentTurn.toString();
-                            writeChatHistoryToStorage(projectId, storageBucketName,
-                                    "role:model : " + currentTurn.toString(),
-                                    transactionId);
-
-                        }
-                        if (functionResult != null) {
-                            answer = functionResult;
-                            writeChatHistoryToStorage(projectId, storageBucketName, "role:model : " + functionResult,
-                                    transactionId);
-                        }
 
                     } // end of content if loop
 
