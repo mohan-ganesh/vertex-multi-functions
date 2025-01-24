@@ -127,19 +127,28 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
                     Thread.sleep(Long.parseLong(threadSleepTime));
 
-                    modelResponse = chatSession.sendMessage(modelResponseOutput);
-
-                    // add the function result for the next input cycle
                     Content modelContent = Content.newBuilder()
-                            .setRole("model")
-                            .addParts(Part.newBuilder().setText(modelResponseOutput).build())
+                            .setRole("user")
+                            .addParts(Part.newBuilder().setText(generateFunctionCallResponseJson(modelResponseOutput)).build())
                             .build();
 
+                            
+                    modelResponse = chatSession.sendMessage(modelContent);
+
+                    
+                    addToChatHistory("user", transactionId, generateFunctionCallResponseJson(modelResponseOutput));
+
+                    // add the function result for the next input cycle
+                    /*
+                    
+
+                            
                     if (chatHistoryCache.get(transactionId) != null) {
                         List<Content> content = chatHistoryCache.get(transactionId);
                         content.add(modelContent);
                         chatHistoryCache.put(transactionId, content);
                     }
+                         */
                 }
 
                 if (modelResponse == null || modelResponse.getCandidatesList().isEmpty()) {
@@ -247,6 +256,7 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                                 }
 
                                 modelResponseOutput = functionResult;
+                                
                             } else {
                                 if (part != null) {
                                     logger.info(methodName + "structured Data: " + part.toString());
@@ -304,6 +314,29 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
             JSONObject outerJson = new JSONObject();
             outerJson.put("functionCall", functionCall);
+
+            return outerJson.toString(2); // Pretty printing
+
+        } catch (Exception e) {
+            logger.error("Error generating JSON: " + e.getMessage());
+            return "{}";
+        }
+    }
+
+     /**
+     * 
+     * @param functionName
+     * @param args
+     * @return
+     */
+    private static String generateFunctionCallResponseJson( String args) {
+        try {
+            JSONObject functionCall = new JSONObject();
+            //functionCall.put("name", functionName);
+            functionCall.put("args", args);
+
+            JSONObject outerJson = new JSONObject();
+            outerJson.put("functionResponse", functionCall);
 
             return outerJson.toString(2); // Pretty printing
 

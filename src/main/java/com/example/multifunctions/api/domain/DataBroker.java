@@ -109,7 +109,7 @@ public class DataBroker {
                 +
                 "3. **Find Available Appointments**: After either member creation or lookup member by id, Search for open doctor appointment slots that meet the member’s preferences. Clarify the preferences if needed.\n"
                 +
-                "4. **Confirm Appointment Details**: Verify the details with the user before booking the appointment. Create the new schedule and confirm the appointment confirmation number. Use the user's name to personalize the response.\n"
+                "4. **Confirm Appointment Details**: Verify the details with the user before confirming the appointment. Schedule the new appointment and confirm the confirmation number. Use the user's name to personalize the response.\n"
                 +
                 "5. **Provide Confirmation**: Once the appointment is scheduled, clearly highlight the member's name and the confirmation code. Acknowledge the completion of the process.\n"
                 +
