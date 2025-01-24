@@ -107,9 +107,9 @@ public class DataBroker {
                 +
                 "2. **Create a New Member**: If the member does not exist by looking up with the member id, create a new member profile by asking for the first name, last name, and email address and invoke create_member API.. Acknowledge the provided information and explain why it is needed, also confirm new system generated member id to user.\n"
                 +
-                "3. **Find Available Appointments**: After either member creation or lookup member by id, Search for open doctor appointment slots that meet the member’s preferences. Clarify the preferences needed, such as date and time.\n"
+                "3. **Find Available Appointments**: After either member creation or lookup member by id, Search for open doctor appointment slots that meet the member’s preferences. Clarify the preferences if needed.\n"
                 +
-                "4. **Confirm Appointment Details**: Verify the preferred day  with the user before booking the appointment. Create the new schedule and confirm the appointment by invoking the confirm_appointment API, and share confirmation number ####-#### format. Use the user's name to personalize the response.\n"
+                "4. **Confirm Appointment Details**: Verify the details with the user before booking the appointment. Create the new schedule and confirm the appointment confirmation number. Use the user's name to personalize the response.\n"
                 +
                 "5. **Provide Confirmation**: Once the appointment is scheduled, clearly highlight the member's name and the confirmation code. Acknowledge the completion of the process.\n"
                 +

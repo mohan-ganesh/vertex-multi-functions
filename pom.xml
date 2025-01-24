@@ -97,6 +97,11 @@
             <scope>runtime</scope>
         </dependency>
 
+<dependency>
+    <groupId>org.json</groupId>
+    <artifactId>json</artifactId>
+    <version>20230618</version>  <!-- Use a recent version -->
+</dependency>
     </dependencies>
 
     <!-- Required for Java 11 functions in the inline editor -->

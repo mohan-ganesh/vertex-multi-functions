@@ -55,6 +55,41 @@ public class FunctionsDefinitions implements Constants {
 
                 addFunctionDeclaration(functionDeclaration_latlong);
 
+                FunctionDeclaration function_schedule_appointment = FunctionDeclaration.newBuilder()
+                                .setName("schedule_appointment")
+                                .setDescription("Schedule the appointment for the given member details.")
+                                .setParameters(
+                                                Schema.newBuilder()
+                                                                .setType(Type.OBJECT)
+                                                                .putProperties("email", Schema.newBuilder()
+                                                                                .setType(Type.STRING)
+                                                                                .setDescription(
+                                                                                                "This must be a string of valid email address.")
+                                                                                .build())
+                                                                .addRequired("email")
+                                                                .putProperties("member_id", Schema.newBuilder()
+                                                                                .setType(Type.STRING)
+                                                                                .setDescription(
+                                                                                                "Unique member or user id of the type alphanumeric character")
+                                                                                .build())
+                                                                .addRequired("member_id")
+                                                                .putProperties("firstName", Schema.newBuilder()
+                                                                                .setType(Type.STRING)
+                                                                                .setDescription(
+                                                                                                "Member First Name")
+                                                                                .build())
+                                                                .addRequired("firstName")
+                                                                .putProperties("lastName", Schema.newBuilder()
+                                                                                .setType(Type.STRING)
+                                                                                .setDescription(
+                                                                                                "Member last name")
+                                                                                .build())
+                                                                .addRequired("firstName")
+                                                                .build())
+                                .build();
+
+                addFunctionDeclaration(function_schedule_appointment);
+
                 /* Declare the function for the API that we want to invoke for latlang */
                 FunctionDeclaration functionDeclaration_medical_appointment = FunctionDeclaration.newBuilder()
                                 .setName("get_appointment")
