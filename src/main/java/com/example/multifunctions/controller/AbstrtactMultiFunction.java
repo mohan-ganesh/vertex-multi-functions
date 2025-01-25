@@ -138,7 +138,7 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                     }
                 } catch (com.google.api.gax.rpc.ResourceExhaustedException e) {
 
-                    logger.error("Vertex AI prediction quota exceeded: ", e);
+                    logger.error("Vertex AI prediction quota exceeded: " + e.getMessage());
 
                     throw new PredictionQuotaExceededException(
                             "We're currently experiencing high demand. Please try again in a few minutes.");
