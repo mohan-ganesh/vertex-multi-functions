@@ -30,8 +30,8 @@ public class FunctionsImpl implements IFunctions, Constants {
 
     @Override
     public String createMember(Struct args) {
-        logger.info("createMember() - start");
-        logger.info(args.toString());
+        logger.info("createMember() - start.");
+        // logger.info(args.toString());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -54,14 +54,14 @@ public class FunctionsImpl implements IFunctions, Constants {
         // Get response body
         String responseBody = response.getBody();
 
-        logger.info("createMember() - end" + responseBody);
+        logger.info("createMember() - end.");
         return responseBody;
     }
 
     @Override
     public String searchMember(Struct args) {
         logger.info("searchMember() - start");
-        logger.info(args.toString());
+        // logger.info(args.toString());
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         // Create request body
@@ -79,13 +79,13 @@ public class FunctionsImpl implements IFunctions, Constants {
 
         // Get response body
         String responseBody = response.getBody();
-        logger.info("searchMember() - end" + responseBody);
+        logger.info("searchMember() - end.");
         return responseBody;
     }
 
     public String createAppointment(Struct args) {
         logger.info("createAppointment() - start");
-        logger.info(args.toString());
+        // logger.info(args.toString());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -115,7 +115,7 @@ public class FunctionsImpl implements IFunctions, Constants {
     public String findOpenAppointments(Struct args) {
 
         logger.info("findOpenAppointments() - start");
-        logger.info(args.toString());
+        // logger.info(args.toString());
         HttpHeaders headers = new HttpHeaders();
         // headers.setContentType(MediaType.APPLICATION_JSON);
         // Create request body
@@ -132,7 +132,7 @@ public class FunctionsImpl implements IFunctions, Constants {
         // Get response body
         String responseBody = response.getBody();
 
-        logger.info("findOpenAppointments() - end" + responseBody);
+        logger.info("findOpenAppointments() - end.");
         return responseBody;
 
     }

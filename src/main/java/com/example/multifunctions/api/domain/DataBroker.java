@@ -109,13 +109,13 @@ public class DataBroker {
                 +
                 "2. **Create a New Member**: If the member does not exist by looking up with the member id, create a new member profile by asking for the first name, last name, and email address and invoke create_member API.. Acknowledge the provided information and explain why it is needed, also confirm new system generated member id to user.\n"
                 +
-                "3. **Find Available Slots**: After either member creation or lookup member by id, Search for open doctor available slots that meet the member’s preferences. Clarify the preferences if needed.\n"
+                "3. **Find Available Slots:** Following member creation or lookup, call the `get_available_slots` function. Process the API's JSON response and present the available slots to the user, or display a message indicating that no slots are available for the specified criteria.  Suggest alternative options if needed.\n"
                 +
-                "4. **Schedule Appointment**: Verify appointment details with the user. Upon confirmation, schedule and provide a personalized confirmation number. Use the user's name to personalize the response.\n"
+                "4. **Schedule Appointment**: Upon confirmation, schedule and provide a personalized confirmation number. Use the user's name to personalize the response.\n"
                 +
-                "5. **Confirmation**: After scheduling, provide the user with a confirmation message that clearly displays the member's name and unique confirmation code.\n"
-                +
-                "6. **Review Chat History**: Always read the chat history thoroughly to maintain context and provide accurate assistance. Handle cases where the user might not have all the required information by guiding them through the necessary steps.";
+                "5. **Confirmation:**  After successfully invoking the `schedule_appointment` function, parse the JSON response to extract the confirmation code.  Display a message to the user similar to: \"Your appointment is confirmed, [Member Name]. Your confirmation code is [Confirmation Code].\"\n"
+
+                + "6. **Review Chat History**: Always read the chat history thoroughly to maintain context and provide accurate assistance. Handle cases where the user might not have all the required information by guiding them through the necessary steps.";
 
         GenerationConfig generationConfig = GenerationConfig.newBuilder()
                 .setMaxOutputTokens(2048)
