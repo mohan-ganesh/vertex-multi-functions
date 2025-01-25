@@ -50,8 +50,6 @@ public class ChatInteraction extends DataBroker {
 
     public static Log logger = LogFactory.getLog(ChatInteraction.class);
 
-  
-
     public static void main(String[] args) throws IOException {
 
         String projectId = "mohanganesh";
@@ -65,10 +63,12 @@ public class ChatInteraction extends DataBroker {
         String prompt = "yes, please.";
         String transactionId = "12345.5";
 
-        logger.info(chatDiscussion(projectId, location, modelName, prompt, transactionId));
+        ChatInteraction chatInteraction = new ChatInteraction();
+        chatInteraction.chatDiscussion(projectId, location, modelName, prompt, transactionId);
+
     }
 
-    public static String chatDiscussion(String projectId, String location, String modelName, String prompt,
+    public String chatDiscussion(String projectId, String location, String modelName, String prompt,
             String transactionId)
             throws IOException {
 

@@ -16,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import com.example.multifunctions.api.FunctionsImpl;
 import com.example.multifunctions.api.IFunctions;
 import com.example.multifunctions.api.domain.DataBroker;
+import com.example.multifunctions.exception.PredictionQuotaExceededException;
 import com.example.multifunctions.functions.FunctionsDefinitions;
 import com.google.cloud.vertexai.VertexAI;
 import com.google.cloud.vertexai.api.Content;
@@ -39,7 +40,12 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
     private String location = "us-central1";
 
-    private static String threadSleepTime = System.getenv("THREAD_SLEEP_TIME");
+    private String role_user = "user";
+
+    private String role_model = "model";
+
+    @Value("${thread.sleep.time}")
+    private String threadSleepTime;
 
     // added map based cache initilazation that takes trasnaction id, list of
     // ordered Content object
@@ -48,20 +54,13 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
     @Autowired
     IFunctions iFunctions;
 
-    // Add an initializer block to set the default value if threadSleepTime is null
-    {
-        if (threadSleepTime == null) {
-            threadSleepTime = "25000";
-        }
-    }
-
     public String service(String promptText, String id) throws Exception {
         String project_id = System.getenv("PROJECT_ID");
         return chatDiscussion(project_id, location, modelName, promptText, id);
 
     }
 
-    public static String chatDiscussion(String projectId, String location, String modelName, String prompt,
+    public String chatDiscussion(String projectId, String location, String modelName, String prompt,
             String transactionId)
             throws IOException, InterruptedException {
 
@@ -96,59 +95,54 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                     logger.info(methodName + "inside do loop that is set to histry -" + content);
                     chatSession.setHistory(content);
                 }
+                try {
+                    if (iteration == 0) {
 
-                if (iteration == 0) {
+                        inputContent = Content.newBuilder()
+                                .setRole(role_user)
+                                .addParts(Part.newBuilder()
+                                        .setText(prompt)
+                                        .build())
+                                .build();
 
-                    inputContent = Content.newBuilder()
-                            .setRole(iteration == 0 ? "user" : "model")
-                            .addParts(Part.newBuilder()
-                                    .setText(iteration == 0 ? prompt : answer.toString())
-                                    .build())
-                            .build();
+                        writeChatHistoryToStorage(projectId, storageBucketName, inputContent.toString(), transactionId);
+                        logger.info(inputContent);
 
-                    writeChatHistoryToStorage(projectId, storageBucketName, inputContent.toString(), transactionId);
-                    logger.info(inputContent);
+                        Thread.sleep(Long.parseLong(threadSleepTime));
+                        modelResponse = chatSession.sendMessage(inputContent);
 
-                    Thread.sleep(Long.parseLong(threadSleepTime));
-                    modelResponse = chatSession.sendMessage(inputContent);
-
-                    if (chatHistoryCache.get(transactionId) != null) {
                         List<Content> content = chatHistoryCache.get(transactionId);
+                        if (content == null) {
+                            content = new ArrayList<>();
+                            chatHistoryCache.put(transactionId, content);
+                            logger.info(methodName + "initialize chat history");
+                        }
                         content.add(inputContent);
-                        chatHistoryCache.put(transactionId, content);
+
                     } else {
-                        List<Content> content = new ArrayList<>();
-                        content.add(inputContent);
-                        chatHistoryCache.put(transactionId, content);
-                        logger.info(methodName + "initialize chat histoy");
+
+                        Thread.sleep(Long.parseLong(threadSleepTime));
+
+                        Content modelContent = Content.newBuilder()
+                                .setRole(role_user)
+                                .addParts(
+                                        Part.newBuilder().setText(generateFunctionCallResponseJson(modelResponseOutput))
+                                                .build())
+                                .build();
+
+                        modelResponse = chatSession.sendMessage(modelContent);
+
+                        addToChatHistory(role_user, transactionId,
+                                generateFunctionCallResponseJson(modelResponseOutput));
+
                     }
+                } catch (com.google.api.gax.rpc.ResourceExhaustedException e) {
 
-                } else {
+                    logger.error("Vertex AI prediction quota exceeded: ", e);
 
-                    Thread.sleep(Long.parseLong(threadSleepTime));
+                    throw new PredictionQuotaExceededException(
+                            "We're currently experiencing high demand. Please try again in a few minutes.");
 
-                    Content modelContent = Content.newBuilder()
-                            .setRole("user")
-                            .addParts(Part.newBuilder().setText(generateFunctionCallResponseJson(modelResponseOutput)).build())
-                            .build();
-
-                            
-                    modelResponse = chatSession.sendMessage(modelContent);
-
-                    
-                    addToChatHistory("user", transactionId, generateFunctionCallResponseJson(modelResponseOutput));
-
-                    // add the function result for the next input cycle
-                    /*
-                    
-
-                            
-                    if (chatHistoryCache.get(transactionId) != null) {
-                        List<Content> content = chatHistoryCache.get(transactionId);
-                        content.add(modelContent);
-                        chatHistoryCache.put(transactionId, content);
-                    }
-                         */
                 }
 
                 if (modelResponse == null || modelResponse.getCandidatesList().isEmpty()) {
@@ -175,19 +169,6 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                                 answer = modelText;
 
                                 addToChatHistory("model", transactionId, modelResponseOutput);
-                                // add the function result for the next input cycle
-                                /*
-                                 * Content modelContent = Content.newBuilder()
-                                 * .setRole("model")
-                                 * .addParts(Part.newBuilder().setText(modelResponseOutput).build())
-                                 * .build();
-                                 * 
-                                 * if (chatHistoryCache.get(transactionId) != null) {
-                                 * List<Content> content = chatHistoryCache.get(transactionId);
-                                 * content.add(modelContent);
-                                 * chatHistoryCache.put(transactionId, content);
-                                 * }
-                                 */
 
                             } else if (part.hasFunctionCall()) {
                                 logger.info(methodName + "function Call: " + part.getFunctionCall());
@@ -200,7 +181,7 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                                 // generate the request finction call and add that to chat history
                                 String functionRequestInput = generateFunctionCallRequestJson(functionName,
                                         functionCall.getArgs());
-                                addToChatHistory("model", transactionId, functionRequestInput);
+                                addToChatHistory(role_model, transactionId, functionRequestInput);
 
                                 switch (functionName) {
                                     case "schedule_appointment":
@@ -212,7 +193,7 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                                         answer = functionResult;
                                         logger.info(methodName + "response " + functionResult);
                                         break;
-                                    case "get_appointment":
+                                    case "get_available_slots":
                                         logger.info(functionCall + " start");
                                         functionResult = functionsImpl.findOpenAppointments(args);
                                         writeChatHistoryToStorage(projectId, storageBucketName,
@@ -220,15 +201,6 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                                                 transactionId);
                                         answer = functionResult;
                                         logger.info(methodName + "response " + functionResult);
-                                        break;
-                                    case "confirm_appointment":
-                                        logger.info(functionCall + " start");
-                                        functionResult = functionsImpl.createAppointment(args);
-                                        writeChatHistoryToStorage(projectId, storageBucketName,
-                                                "role:model : " + functionResult,
-                                                transactionId);
-                                        logger.info(methodName + "response " + functionResult);
-
                                         break;
                                     case "search_member":
                                         logger.info(functionCall + " start");
@@ -256,7 +228,7 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
                                 }
 
                                 modelResponseOutput = functionResult;
-                                
+
                             } else {
                                 if (part != null) {
                                     logger.info(methodName + "structured Data: " + part.toString());
@@ -286,7 +258,7 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
      * @param transactionId
      * @param functionRequestInput
      */
-    private static void addToChatHistory(String role, String transactionId, String functionRequestInput) {
+    private void addToChatHistory(String role, String transactionId, String functionRequestInput) {
 
         Content modelContent = Content.newBuilder()
                 .setRole(role)
@@ -306,10 +278,10 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
      * @param args
      * @return
      */
-    private static String generateFunctionCallRequestJson(String functionName, Struct args) {
+    private String generateFunctionCallRequestJson(String functionName, Struct args) {
         try {
             JSONObject functionCall = new JSONObject();
-            functionCall.put("name", functionName);
+            functionCall.put("functionName", functionName);
             functionCall.put("args", args);
 
             JSONObject outerJson = new JSONObject();
@@ -323,16 +295,16 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
         }
     }
 
-     /**
+    /**
      * 
      * @param functionName
      * @param args
      * @return
      */
-    private static String generateFunctionCallResponseJson( String args) {
+    private String generateFunctionCallResponseJson(String args) {
         try {
             JSONObject functionCall = new JSONObject();
-            //functionCall.put("name", functionName);
+            // functionCall.put("name", functionName);
             functionCall.put("args", args);
 
             JSONObject outerJson = new JSONObject();

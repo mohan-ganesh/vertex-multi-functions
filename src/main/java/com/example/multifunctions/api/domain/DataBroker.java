@@ -18,12 +18,14 @@ import com.google.cloud.vertexai.generativeai.ContentMaker;
 import com.google.cloud.vertexai.generativeai.GenerativeModel;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.beans.factory.annotation.Value;
 
 public class DataBroker {
 
     public static Log logger = LogFactory.getLog(DataBroker.class);
 
-    public static String storageBucketName = System.getenv("GS_BUCKET");
+    @Value("${storage.bucket.name}") // Inject from properties
+    protected String storageBucketName;
 
     /**
      * 
@@ -107,11 +109,11 @@ public class DataBroker {
                 +
                 "2. **Create a New Member**: If the member does not exist by looking up with the member id, create a new member profile by asking for the first name, last name, and email address and invoke create_member API.. Acknowledge the provided information and explain why it is needed, also confirm new system generated member id to user.\n"
                 +
-                "3. **Find Available Appointments**: After either member creation or lookup member by id, Search for open doctor appointment slots that meet the member’s preferences. Clarify the preferences if needed.\n"
+                "3. **Find Available Slots**: After either member creation or lookup member by id, Search for open doctor available slots that meet the member’s preferences. Clarify the preferences if needed.\n"
                 +
-                "4. **Confirm Appointment Details**: Verify the details with the user before confirming the appointment. Schedule the new appointment and confirm the confirmation number. Use the user's name to personalize the response.\n"
+                "4. **Schedule Appointment**: Verify appointment details with the user. Upon confirmation, schedule and provide a personalized confirmation number. Use the user's name to personalize the response.\n"
                 +
-                "5. **Provide Confirmation**: Once the appointment is scheduled, clearly highlight the member's name and the confirmation code. Acknowledge the completion of the process.\n"
+                "5. **Confirmation**: After scheduling, provide the user with a confirmation message that clearly displays the member's name and unique confirmation code.\n"
                 +
                 "6. **Review Chat History**: Always read the chat history thoroughly to maintain context and provide accurate assistance. Handle cases where the user might not have all the required information by guiding them through the necessary steps.";
 
