@@ -36,7 +36,8 @@ public abstract class AbstrtactMultiFunction extends DataBroker {
 
     public static Log logger = LogFactory.getLog(AbstrtactMultiFunction.class);
 
-    private static String modelName = "gemini-1.5-flash-002";
+    @Value("${gemini.model.name}")
+    private  String modelName;
 
     private String location = "us-central1";
 
