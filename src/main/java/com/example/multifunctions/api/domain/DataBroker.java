@@ -1,12 +1,17 @@
 package com.example.multifunctions.api.domain;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
+import com.example.multifunctions.domain.Instructions;
 import com.example.multifunctions.functions.FunctionsDefinitions;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
@@ -26,6 +31,48 @@ public class DataBroker {
 
     @Value("${storage.bucket.name}") // Inject from properties
     protected String storageBucketName;
+
+    private List<String> listSystemInstructions;
+
+    public DataBroker() {
+        loadSystemInstructions();
+    }
+
+    private void loadSystemInstructions() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try (InputStream inputStream = getClass().getClassLoader().getResourceAsStream("system-instructions.json")) {
+            if (inputStream == null) {
+                throw new IOException("Resource not found: instructions.json");
+            }
+            Instructions instructions = objectMapper.readValue(inputStream, Instructions.class);
+            this.listSystemInstructions = instructions.getInstructions();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Getter for systemInstructions
+    public List<String> getSystemInstructions() {
+        return listSystemInstructions;
+    }
+
+    // Method to concatenate all instructions into a single string
+    public String getAllInstructions() {
+        return listSystemInstructions.stream().collect(Collectors.joining());
+    }
+
+    // Inner class to map JSON structure
+    private static class Instructions {
+        private List<String> instructions;
+
+        public List<String> getInstructions() {
+            return instructions;
+        }
+
+        public void setInstructions(List<String> instructions) {
+            this.instructions = instructions;
+        }
+    }
 
     /**
      * 
@@ -101,9 +148,11 @@ public class DataBroker {
         logger.info("Chat history written to Google Cloud Storage: gs://" + bucketName + "/" + blobId.getName());
     }
 
-    protected static GenerativeModel initializeGenerativeModel(VertexAI vertexAI, String modelName) {
+    protected GenerativeModel initializeGenerativeModel(VertexAI vertexAI, String modelName) {
         // ... (set generation config, safety settings, tools, etc., as needed)
         // Construct and return the GenerativeModel
+
+        logger.info(getSystemInstructions());
 
         String systemInstructions = "You are a helpful and friendly assistant specializing in managing doctor appointments. Your primary goal is to assist users in booking appointments by following these guidelines.\n"
                 + "You will be provided with the conversation history to understand the user's needs. You can only proceed with booking an appointment after you have collected the member ID, first name, last name, email address, and zip code from the user, the user has explicitly confirmed the appointment time and details and you have successfully received a response from the `schedule_appointment` function.\n"
@@ -131,6 +180,9 @@ public class DataBroker {
                 + "10. **Clarification:** If a user request is ambiguous or unclear, ask for clarification. If the user provides invalid information (e.g. incorrect email format), ask them to provide the information again in the correct format.\n"
                 + "11. **Error Handling**: If an error occurs during any function call, inform the user that there was an issue and ask them to try again or provide any further information needed to resolve the issue. If you are waiting for a response from a function, do not give the user the impression that the booking process is complete. \n";
 
+        systemInstructions = getAllInstructions();
+
+        logger.info(systemInstructions);
         GenerationConfig generationConfig = GenerationConfig.newBuilder()
                 .setMaxOutputTokens(8192)
                 .setTemperature(0.5F)
